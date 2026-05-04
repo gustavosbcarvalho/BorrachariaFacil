@@ -36,3 +36,6 @@ prisma/*.db-journal
 # misc
 .DS_Store
 *.pem
+
+# Claude Code (configurações locais do editor)
+.claude/
