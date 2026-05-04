@@ -1,0 +1,124 @@
+"use client";
+
+import {
+  formatCurrency,
+  formatDateTime,
+  PAYMENT_METHOD_LABELS,
+  SERVICE_STATUS_LABELS,
+  SERVICE_STATUS_COLORS,
+} from "@/lib/utils";
+import { updateServiceStatus, deleteService } from "@/app/actions/services";
+import { ServiceStatus } from "@prisma/client";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { useTransition } from "react";
+
+type ServiceWithRelations = {
+  id: string;
+  description: string | null;
+  amount: unknown;
+  paymentMethod: string;
+  status: ServiceStatus;
+  notes: string | null;
+  occurredAt: Date;
+  serviceType: { name: string };
+  user: { name: string };
+};
+
+function ServiceCard({ service }: { service: ServiceWithRelations }) {
+  const [isPending, startTransition] = useTransition();
+
+  const markAsPaid = () => {
+    startTransition(() => updateServiceStatus(service.id, "PAID" as ServiceStatus));
+  };
+
+  const handleDelete = () => {
+    if (!confirm("Excluir este serviço permanentemente?")) return;
+    startTransition(() => deleteService(service.id));
+  };
+
+  return (
+    <div className={`card space-y-2 ${isPending ? "opacity-50" : ""}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-semibold text-gray-900 truncate">{service.serviceType.name}</p>
+          {service.description && (
+            <p className="text-sm text-gray-500 truncate">{service.description}</p>
+          )}
+        </div>
+        <span
+          className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${SERVICE_STATUS_COLORS[service.status]}`}
+        >
+          {SERVICE_STATUS_LABELS[service.status]}
+        </span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="text-xl font-bold text-green-700">
+          {formatCurrency(Number(service.amount))}
+        </span>
+        <span className="text-sm text-gray-500">
+          {PAYMENT_METHOD_LABELS[service.paymentMethod]}
+        </span>
+      </div>
+
+      <div className="text-xs text-gray-400">
+        {formatDateTime(service.occurredAt)} · {service.user.name}
+      </div>
+
+      {service.status === "PENDING" && (
+        <button
+          onClick={markAsPaid}
+          disabled={isPending}
+          className="w-full mt-1 py-2 rounded-lg bg-green-600 text-white text-sm font-medium active:bg-green-700 disabled:opacity-50"
+        >
+          Marcar como Pago
+        </button>
+      )}
+
+      <button
+        onClick={handleDelete}
+        disabled={isPending}
+        className="w-full py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium active:bg-red-100 border border-red-200 disabled:opacity-50"
+      >
+        Excluir
+      </button>
+    </div>
+  );
+}
+
+export function ServiceList({ services }: { services: ServiceWithRelations[] }) {
+  if (services.length === 0) {
+    return (
+      <div className="text-center py-16 text-gray-400">
+        <p className="text-4xl mb-3">🔧</p>
+        <p className="font-medium">Nenhum serviço registrado</p>
+        <Link
+          href="/services/new"
+          className="btn-primary mt-6 inline-flex w-auto px-8"
+        >
+          <Plus className="w-5 h-5" />
+          Novo Serviço
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-500">{services.length} serviço(s)</p>
+        <Link
+          href="/services/new"
+          className="flex items-center gap-1 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg"
+        >
+          <Plus className="w-4 h-4" /> Novo
+        </Link>
+      </div>
+
+      {services.map((service) => (
+        <ServiceCard key={service.id} service={service} />
+      ))}
+    </div>
+  );
+}

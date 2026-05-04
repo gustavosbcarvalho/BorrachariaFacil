@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────
+
+enum Role {
+  OPERATOR
+  ADMIN
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CARD
+}
+
+enum ServiceStatus {
+  PAID
+  PENDING
+  COURTESY
+}
+
+// ─── Usuários ─────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         Role      @default(OPERATOR)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  services Service[]
+  expenses Expense[]
+
+  @@map("users")
+}
+
+// ─── Tipos de Serviço ─────────────────────────────────────
+
+model ServiceType {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  active   Boolean   @default(true)
+
+  services Service[]
+
+  @@map("service_types")
+}
+
+// ─── Serviços Executados ──────────────────────────────────
+
+model Service {
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  serviceTypeId String        @map("service_type_id")
+  description   String?
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @map("payment_method")
+  status        ServiceStatus @default(PAID)
+  notes         String?
+  occurredAt    DateTime      @map("occurred_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  user        User        @relation(fields: [userId], references: [id])
+  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id])
+
+  @@map("services")
+}
+
+// ─── Categorias de Despesa ────────────────────────────────
+
+model ExpenseCategory {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  active   Boolean   @default(true)
+
+  expenses Expense[]
+
+  @@map("expense_categories")
+}
+
+// ─── Despesas / Gastos ────────────────────────────────────
+
+model Expense {
+  id            String          @id @default(cuid())
+  userId        String          @map("user_id")
+  categoryId    String          @map("category_id")
+  description   String
+  amount        Decimal         @db.Decimal(10, 2)
+  paymentMethod PaymentMethod   @map("payment_method")
+  hasReceipt    Boolean         @default(false) @map("has_receipt")
+  notes         String?
+  occurredAt    DateTime        @map("occurred_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  user     User            @relation(fields: [userId], references: [id])
+  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@map("expenses")
+}

@@ -1,0 +1,83 @@
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { Header } from "@/components/Header";
+import { DashboardCards } from "@/components/DashboardCards";
+import { QuickActions } from "@/components/QuickActions";
+import { startOfDay, endOfDay, startOfMonth, endOfMonth } from "@/lib/dateUtils";
+
+async function getDashboardData() {
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const todayEnd = endOfDay(now);
+  const monthStart = startOfMonth(now);
+  const monthEnd = endOfMonth(now);
+
+  const [
+    todayServices,
+    todayExpenses,
+    monthServices,
+    monthExpenses,
+    pendingServices,
+  ] = await Promise.all([
+    prisma.service.aggregate({
+      where: {
+        occurredAt: { gte: todayStart, lte: todayEnd },
+        status: { not: "COURTESY" },
+      },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.expense.aggregate({
+      where: { occurredAt: { gte: todayStart, lte: todayEnd } },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.service.aggregate({
+      where: {
+        occurredAt: { gte: monthStart, lte: monthEnd },
+        status: { not: "COURTESY" },
+      },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.expense.aggregate({
+      where: { occurredAt: { gte: monthStart, lte: monthEnd } },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.service.count({ where: { status: "PENDING" } }),
+  ]);
+
+  return {
+    today: {
+      income: Number(todayServices._sum.amount ?? 0),
+      expenses: Number(todayExpenses._sum.amount ?? 0),
+      serviceCount: todayServices._count,
+    },
+    month: {
+      income: Number(monthServices._sum.amount ?? 0),
+      expenses: Number(monthExpenses._sum.amount ?? 0),
+      serviceCount: monthServices._count,
+    },
+    pendingCount: pendingServices,
+  };
+}
+
+export default async function DashboardPage() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const data = await getDashboardData();
+  const isAdmin = session.user.role === "ADMIN";
+
+  return (
+    <>
+      <Header title="Borracharia Fácil" />
+      <div className="px-4 py-4 space-y-4">
+        <DashboardCards data={data} isAdmin={isAdmin} />
+        <QuickActions isAdmin={isAdmin} pendingCount={data.pendingCount} />
+      </div>
+    </>
+  );
+}
