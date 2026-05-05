@@ -23,7 +23,7 @@ async function getDashboardData() {
     prisma.service.aggregate({
       where: {
         occurredAt: { gte: todayStart, lte: todayEnd },
-        status: { not: "COURTESY" },
+        paymentStatus: { not: "COURTESY" },
       },
       _sum: { amount: true },
       _count: true,
@@ -36,7 +36,7 @@ async function getDashboardData() {
     prisma.service.aggregate({
       where: {
         occurredAt: { gte: monthStart, lte: monthEnd },
-        status: { not: "COURTESY" },
+        paymentStatus: { not: "COURTESY" },
       },
       _sum: { amount: true },
       _count: true,
@@ -46,7 +46,7 @@ async function getDashboardData() {
       _sum: { amount: true },
       _count: true,
     }),
-    prisma.service.count({ where: { status: "PENDING" } }),
+    prisma.service.count({ where: { paymentStatus: "PENDING" } }),
   ]);
 
   return {

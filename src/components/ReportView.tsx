@@ -7,7 +7,7 @@ type ServiceWithType = {
   id: string;
   amount: unknown;
   paymentMethod: string;
-  status: string;
+  paymentStatus: string;
   serviceType: { name: string };
 };
 
@@ -29,8 +29,8 @@ interface ReportData {
 }
 
 function computeReport(services: ServiceWithType[], expenses: ExpenseWithCategory[]) {
-  const paidServices = services.filter((s) => s.status !== "COURTESY");
-  const pendingServices = services.filter((s) => s.status === "PENDING");
+  const paidServices = services.filter((s) => s.paymentStatus !== "COURTESY");
+  const pendingServices = services.filter((s) => s.paymentStatus === "PENDING");
 
   const totalIncome = paidServices.reduce((acc, s) => acc + Number(s.amount), 0);
   const pendingAmount = pendingServices.reduce((acc, s) => acc + Number(s.amount), 0);

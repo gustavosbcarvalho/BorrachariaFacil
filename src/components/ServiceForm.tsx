@@ -121,7 +121,7 @@ export function ServiceForm({ serviceTypes }: { serviceTypes: ServiceType[] }) {
             >
               <input
                 type="radio"
-                name="status"
+                name="paymentStatus"
                 value={s.value}
                 className="sr-only"
                 checked={selectedStatus === s.value}

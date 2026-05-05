@@ -4,11 +4,11 @@ import {
   formatCurrency,
   formatDateTime,
   PAYMENT_METHOD_LABELS,
-  SERVICE_STATUS_LABELS,
-  SERVICE_STATUS_COLORS,
+  PAYMENT_STATUS_LABELS,
+  PAYMENT_STATUS_COLORS,
 } from "@/lib/utils";
 import { updateServiceStatus, deleteService } from "@/app/actions/services";
-import { ServiceStatus } from "@prisma/client";
+import { PaymentStatus } from "@prisma/client";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useTransition } from "react";
@@ -17,8 +17,9 @@ type ServiceWithRelations = {
   id: string;
   description: string | null;
   amount: unknown;
+  amountDue: unknown;
   paymentMethod: string;
-  status: ServiceStatus;
+  paymentStatus: PaymentStatus;
   notes: string | null;
   occurredAt: Date;
   serviceType: { name: string };
@@ -29,7 +30,7 @@ function ServiceCard({ service }: { service: ServiceWithRelations }) {
   const [isPending, startTransition] = useTransition();
 
   const markAsPaid = () => {
-    startTransition(() => updateServiceStatus(service.id, "PAID" as ServiceStatus));
+    startTransition(() => updateServiceStatus(service.id, "PAID"));
   };
 
   const handleDelete = () => {
@@ -47,9 +48,9 @@ function ServiceCard({ service }: { service: ServiceWithRelations }) {
           )}
         </div>
         <span
-          className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${SERVICE_STATUS_COLORS[service.status]}`}
+          className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${PAYMENT_STATUS_COLORS[service.paymentStatus]}`}
         >
-          {SERVICE_STATUS_LABELS[service.status]}
+          {PAYMENT_STATUS_LABELS[service.paymentStatus]}
         </span>
       </div>
 
@@ -62,11 +63,17 @@ function ServiceCard({ service }: { service: ServiceWithRelations }) {
         </span>
       </div>
 
+      {Number(service.amountDue) > 0 && (
+        <p className="text-sm text-orange-600 font-medium">
+          Em aberto: {formatCurrency(Number(service.amountDue))}
+        </p>
+      )}
+
       <div className="text-xs text-gray-400">
         {formatDateTime(service.occurredAt)} · {service.user.name}
       </div>
 
-      {service.status === "PENDING" && (
+      {(service.paymentStatus === "PENDING" || service.paymentStatus === "PARTIAL") && (
         <button
           onClick={markAsPaid}
           disabled={isPending}
@@ -93,12 +100,8 @@ export function ServiceList({ services }: { services: ServiceWithRelations[] }) 
       <div className="text-center py-16 text-gray-400">
         <p className="text-4xl mb-3">🔧</p>
         <p className="font-medium">Nenhum serviço registrado</p>
-        <Link
-          href="/services/new"
-          className="btn-primary mt-6 inline-flex w-auto px-8"
-        >
-          <Plus className="w-5 h-5" />
-          Novo Serviço
+        <Link href="/services/new" className="btn-primary mt-6 inline-flex w-auto px-8">
+          <Plus className="w-5 h-5" /> Novo Serviço
         </Link>
       </div>
     );
@@ -115,7 +118,6 @@ export function ServiceList({ services }: { services: ServiceWithRelations[] }) 
           <Plus className="w-4 h-4" /> Novo
         </Link>
       </div>
-
       {services.map((service) => (
         <ServiceCard key={service.id} service={service} />
       ))}

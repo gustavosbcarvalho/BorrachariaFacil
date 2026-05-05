@@ -34,16 +34,25 @@ export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   CASH: "Dinheiro",
   PIX: "PIX",
   CARD: "Cartão",
+  CONVENIO: "Convênio",
 };
 
-export const SERVICE_STATUS_LABELS: Record<string, string> = {
+export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   PAID: "Pago",
+  PARTIAL: "Parcial",
   PENDING: "Pendente",
   COURTESY: "Cortesia",
 };
 
-export const SERVICE_STATUS_COLORS: Record<string, string> = {
+export const PAYMENT_STATUS_COLORS: Record<string, string> = {
   PAID: "bg-green-100 text-green-800",
+  PARTIAL: "bg-orange-100 text-orange-800",
   PENDING: "bg-yellow-100 text-yellow-800",
   COURTESY: "bg-gray-100 text-gray-600",
+};
+
+export const PAYMENT_FREQUENCY_LABELS: Record<string, string> = {
+  WEEKLY: "Semanal",
+  BIWEEKLY: "Quinzenal",
+  MONTHLY: "Mensal",
 };

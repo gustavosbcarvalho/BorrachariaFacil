@@ -8,17 +8,20 @@ import { getSession } from "@/lib/auth";
 async function requireAdmin() {
   const session = await getSession();
   if (!session || session.user.role !== "ADMIN") redirect("/login");
+  if (!session.user.borrachariaId) redirect("/login");
   return session;
 }
 
 export async function createServiceType(formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const borrachariaId = session.user.borrachariaId!;
   const name = (formData.get("name") as string)?.trim();
   if (!name) return;
+
   await prisma.serviceType.upsert({
-    where: { name },
+    where: { name_borrachariaId: { name, borrachariaId } },
     update: { active: true },
-    create: { name },
+    create: { name, borrachariaId },
   });
   revalidatePath("/settings");
 }
@@ -30,13 +33,15 @@ export async function toggleServiceType(id: string, active: boolean) {
 }
 
 export async function createCategory(formData: FormData) {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const borrachariaId = session.user.borrachariaId!;
   const name = (formData.get("name") as string)?.trim();
   if (!name) return;
+
   await prisma.expenseCategory.upsert({
-    where: { name },
+    where: { name_borrachariaId: { name, borrachariaId } },
     update: { active: true },
-    create: { name },
+    create: { name, borrachariaId },
   });
   revalidatePath("/settings");
 }
