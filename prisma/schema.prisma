@@ -8,91 +8,159 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ─── Enums ────────────────────────────────────────────────
+// ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum Role {
-  OPERATOR
+  SYSTEM_ADMIN
   ADMIN
+  OPERATOR
 }
 
 enum PaymentMethod {
   CASH
   PIX
   CARD
+  CONVENIO
 }
 
-enum ServiceStatus {
-  PAID
+enum PaymentStatus {
   PENDING
+  PARTIAL
+  PAID
   COURTESY
 }
 
-// ─── Usuários ─────────────────────────────────────────────
+enum PaymentFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum PlanStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum PlanName {
+  FREE
+  BASIC
+  PRO
+}
+
+// ─── Borracharias (tenants) ───────────────────────────────────────────────────
+
+model Borracharia {
+  id                String     @id @default(cuid())
+  name              String
+  cnpj              String?    @unique
+  cpf               String?
+  address           String
+  city              String
+  state             String
+  zipCode           String     @map("zip_code")
+  active            Boolean    @default(true)
+  // Campos reservados para futura monetização — não implementar lógica agora
+  planStatus        PlanStatus @default(TRIAL) @map("plan_status")
+  planName          PlanName   @default(FREE) @map("plan_name")
+  trialEndsAt       DateTime?  @map("trial_ends_at")
+  subscriptionNotes String?    @map("subscription_notes")
+  createdAt         DateTime   @default(now()) @map("created_at")
+
+  users             User[]
+  services          Service[]
+  expenses          Expense[]
+  serviceTypes      ServiceType[]
+  expenseCategories ExpenseCategory[]
+  convenios         Convenio[]
+
+  @@map("borracharias")
+}
+
+// ─── Usuários ─────────────────────────────────────────────────────────────────
 
 model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String    @map("password_hash")
-  role         Role      @default(OPERATOR)
-  active       Boolean   @default(true)
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id            String       @id @default(cuid())
+  name          String
+  email         String       @unique
+  passwordHash  String       @map("password_hash")
+  role          Role         @default(OPERATOR)
+  active        Boolean      @default(true)
+  borrachariaId String?      @map("borracharia_id") // null apenas para SYSTEM_ADMIN
+  createdAt     DateTime     @default(now()) @map("created_at")
 
-  services Service[]
-  expenses Expense[]
+  borracharia Borracharia? @relation(fields: [borrachariaId], references: [id])
+  services    Service[]
+  expenses    Expense[]
 
   @@map("users")
 }
 
-// ─── Tipos de Serviço ─────────────────────────────────────
+// ─── Tipos de Serviço ─────────────────────────────────────────────────────────
 
 model ServiceType {
-  id       String    @id @default(cuid())
-  name     String    @unique
-  active   Boolean   @default(true)
+  id            String       @id @default(cuid())
+  name          String
+  active        Boolean      @default(true)
+  borrachariaId String?      @map("borracharia_id")
 
-  services Service[]
+  borracharia Borracharia? @relation(fields: [borrachariaId], references: [id])
+  services    Service[]
 
+  @@unique([name, borrachariaId])
   @@map("service_types")
 }
 
-// ─── Serviços Executados ──────────────────────────────────
+// ─── Serviços Executados ──────────────────────────────────────────────────────
 
 model Service {
-  id            String        @id @default(cuid())
-  userId        String        @map("user_id")
-  serviceTypeId String        @map("service_type_id")
-  description   String?
-  amount        Decimal       @db.Decimal(10, 2)
-  paymentMethod PaymentMethod @map("payment_method")
-  status        ServiceStatus @default(PAID)
-  notes         String?
-  occurredAt    DateTime      @map("occurred_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
+  id                String        @id @default(cuid())
+  userId            String        @map("user_id")
+  borrachariaId     String?       @map("borracharia_id")
+  serviceTypeId     String        @map("service_type_id")
+  description       String?
+  amount            Decimal       @db.Decimal(10, 2)
+  amountPaid        Decimal       @default(0) @db.Decimal(10, 2) @map("amount_paid")
+  amountDue         Decimal       @default(0) @db.Decimal(10, 2) @map("amount_due")
+  paymentMethod     PaymentMethod @map("payment_method")
+  paymentStatus     PaymentStatus @default(PAID) @map("payment_status")
+  convenioId        String?       @map("convenio_id")
+  convenioPaymentId String?       @map("convenio_payment_id")
+  notes             String?
+  occurredAt        DateTime      @map("occurred_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
 
-  user        User        @relation(fields: [userId], references: [id])
-  serviceType ServiceType @relation(fields: [serviceTypeId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
+  borracharia     Borracharia?     @relation(fields: [borrachariaId], references: [id])
+  serviceType     ServiceType      @relation(fields: [serviceTypeId], references: [id])
+  convenio        Convenio?        @relation(fields: [convenioId], references: [id])
+  convenioPayment ConvenioPayment? @relation(fields: [convenioPaymentId], references: [id])
 
   @@map("services")
 }
 
-// ─── Categorias de Despesa ────────────────────────────────
+// ─── Categorias de Despesa ────────────────────────────────────────────────────
 
 model ExpenseCategory {
-  id       String    @id @default(cuid())
-  name     String    @unique
-  active   Boolean   @default(true)
+  id            String       @id @default(cuid())
+  name          String
+  active        Boolean      @default(true)
+  borrachariaId String?      @map("borracharia_id")
 
-  expenses Expense[]
+  borracharia Borracharia? @relation(fields: [borrachariaId], references: [id])
+  expenses    Expense[]
 
+  @@unique([name, borrachariaId])
   @@map("expense_categories")
 }
 
-// ─── Despesas / Gastos ────────────────────────────────────
+// ─── Despesas / Gastos ────────────────────────────────────────────────────────
 
 model Expense {
   id            String          @id @default(cuid())
   userId        String          @map("user_id")
+  borrachariaId String?         @map("borracharia_id")
   categoryId    String          @map("category_id")
   description   String
   amount        Decimal         @db.Decimal(10, 2)
@@ -102,8 +170,44 @@ model Expense {
   occurredAt    DateTime        @map("occurred_at")
   createdAt     DateTime        @default(now()) @map("created_at")
 
-  user     User            @relation(fields: [userId], references: [id])
-  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
+  borracharia Borracharia?    @relation(fields: [borrachariaId], references: [id])
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
 
   @@map("expenses")
+}
+
+// ─── Convênios ────────────────────────────────────────────────────────────────
+
+model Convenio {
+  id               String           @id @default(cuid())
+  borrachariaId    String           @map("borracharia_id")
+  companyName      String           @map("company_name")
+  paymentFrequency PaymentFrequency @map("payment_frequency")
+  nextPaymentDate  DateTime         @map("next_payment_date")
+  active           Boolean          @default(true)
+  notes            String?
+  createdAt        DateTime         @default(now()) @map("created_at")
+
+  borracharia Borracharia      @relation(fields: [borrachariaId], references: [id])
+  services    Service[]
+  payments    ConvenioPayment[]
+
+  @@map("convenios")
+}
+
+// ─── Pagamentos de Convênio ───────────────────────────────────────────────────
+
+model ConvenioPayment {
+  id         String   @id @default(cuid())
+  convenioId String   @map("convenio_id")
+  amountPaid Decimal  @db.Decimal(10, 2) @map("amount_paid")
+  paidAt     DateTime @map("paid_at")
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  convenio Convenio  @relation(fields: [convenioId], references: [id])
+  services Service[]
+
+  @@map("convenio_payments")
 }
