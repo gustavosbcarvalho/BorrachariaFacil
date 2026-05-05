@@ -21,6 +21,7 @@ async function getDashboardData(borrachariaId: string) {
     monthServices,
     monthExpenses,
     pendingCount,
+    pendingConvenioCount,
   ] = await Promise.all([
     prisma.service.aggregate({
       where: { ...base, occurredAt: { gte: todayStart, lte: todayEnd }, paymentStatus: { not: "COURTESY" } },
@@ -45,6 +46,13 @@ async function getDashboardData(borrachariaId: string) {
     prisma.service.count({
       where: { ...base, paymentStatus: { in: ["PENDING", "PARTIAL"] } },
     }),
+    prisma.convenio.count({
+      where: {
+        borrachariaId,
+        active: true,
+        services: { some: { paymentStatus: { in: ["PENDING", "PARTIAL"] } } },
+      },
+    }),
   ]);
 
   return {
@@ -59,6 +67,7 @@ async function getDashboardData(borrachariaId: string) {
       serviceCount: monthServices._count,
     },
     pendingCount,
+    pendingConvenioCount,
   };
 }
 
@@ -74,7 +83,11 @@ export default async function DashboardPage() {
       <Header title="Dashboard" />
       <div className="px-4 py-4 space-y-4">
         <DashboardCards data={data} isAdmin={isAdmin} />
-        <QuickActions isAdmin={isAdmin} pendingCount={data.pendingCount} />
+        <QuickActions
+          isAdmin={isAdmin}
+          pendingCount={data.pendingCount}
+          pendingConvenioCount={data.pendingConvenioCount}
+        />
       </div>
     </>
   );

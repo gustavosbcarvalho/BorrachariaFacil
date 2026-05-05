@@ -22,7 +22,11 @@
       "Bash(git commit *)",
       "Bash(node -e ' *)",
       "Bash(mkdir -p /c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/admin/borracharias/new && mkdir -p /c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/admin/borracharias/[id] && echo \"ok\")",
-      "Bash(mkdir -p /c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/convenios/new && mkdir -p \"/c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/convenios/[id]/pagamento\" && echo \"ok\")"
+      "Bash(mkdir -p /c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/convenios/new && mkdir -p \"/c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/convenios/[id]/pagamento\" && echo \"ok\")",
+      "Bash(curl -s http://localhost:3000/api/borracharias)",
+      "Bash(curl -s http://localhost:3000/dashboard)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(npx next *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\gustavo.carvalho\\source\\repos\\BorrachariaFacil\\src\\app\\admin\\borracharias",
