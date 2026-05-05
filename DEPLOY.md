@@ -32,13 +32,22 @@ Acesse: **app.supabase.com → projeto → Settings → Database → Connection 
 
 Você precisa de **duas** URLs:
 
-| Variável | Aba no Supabase | Para quê |
-|---|---|---|
-| `DATABASE_URL` | **Session Pooler** (porta 5432) | Queries em runtime (Vercel, IPv4) |
-| `DIRECT_URL` | **Session Pooler** (mesma URL) | Migrations e seed |
+| Variável | Aba no Supabase | Porta | Para quê |
+|---|---|---|---|
+| `DATABASE_URL` | **Transaction Pooler** | **6543** + `?pgbouncer=true` | Queries em runtime (Vercel) — suporta muitas conexões |
+| `DIRECT_URL` | **Session Pooler** | **5432** | Migrations e seed — máx 15 conexões |
+
+> **Por que Transaction Pooler para DATABASE_URL?**
+> O Vercel cria funções serverless independentes por request. Sem o Transaction Pooler,
+> cada função abre uma conexão no Session Pooler (limite: 15), que esgota rapidamente
+> com múltiplos usuários ou páginas que fazem várias queries em paralelo.
 
 Formato:
 ```
+# DATABASE_URL — Transaction Pooler (porta 6543)
+postgresql://postgres.SEU_REF:[SENHA]@aws-1-REGIAO.pooler.supabase.com:6543/postgres?pgbouncer=true
+
+# DIRECT_URL — Session Pooler (porta 5432)
 postgresql://postgres.SEU_REF:[SENHA]@aws-1-REGIAO.pooler.supabase.com:5432/postgres
 ```
 
