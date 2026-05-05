@@ -1,6 +1,17 @@
 # Deploy — Borracharia Fácil
 
-Guia completo para configurar o banco de dados no Supabase, rodar migrations, seed, e publicar na Vercel.
+Guia completo para configurar o banco de dados no Supabase, rodar migrations, seed e publicar na Vercel.
+
+---
+
+## Visão geral da arquitetura
+
+```
+SYSTEM_ADMIN (gustavo.sbcarvalho@gmail.com)
+  └── /admin — gerencia borracharias e usuários
+        └── Borracharia A → usuarios, servicos, despesas, convenios
+        └── Borracharia B → ...
+```
 
 ---
 
@@ -9,86 +20,62 @@ Guia completo para configurar o banco de dados no Supabase, rodar migrations, se
 - Conta criada em [supabase.com](https://supabase.com)
 - Conta criada em [vercel.com](https://vercel.com)
 - Node.js 18+ instalado localmente
-- Repositório no GitHub (recomendado para integração com Vercel)
+- Repositório no GitHub: `github.com/gustavosbcarvalho/BorrachariaFacil`
 
 ---
 
 ## 1. Configurar o Supabase
 
-### 1.1 Criar projeto
+### 1.1 Connection strings
 
-1. Acesse [app.supabase.com](https://app.supabase.com) → **New Project**
-2. Escolha nome (ex: `borracharia-facil`), região (South America – São Paulo) e defina uma senha forte para o banco
-3. Aguarde o projeto inicializar (~2 min)
+Acesse: **app.supabase.com → projeto → Settings → Database → Connection string**
 
-### 1.2 Obter as connection strings
+Você precisa de **duas** URLs:
 
-1. No painel do projeto → **Settings** → **Database**
-2. Role até a seção **Connection string**
-3. Selecione a aba **URI**
-
-Você vai precisar de **duas** strings:
-
-| Variável | Como obter | Para quê |
+| Variável | Aba no Supabase | Para quê |
 |---|---|---|
-| `DATABASE_URL` | URI com `?pgbouncer=true` na porta **6543** | Queries em runtime (Vercel) |
-| `DIRECT_URL` | URI na porta **5432** (sem pgbouncer) | Migrations e seed |
+| `DATABASE_URL` | **Session Pooler** (porta 5432) | Queries em runtime (Vercel, IPv4) |
+| `DIRECT_URL` | **Session Pooler** (mesma URL) | Migrations e seed |
 
-A URL de pooling fica assim:
+Formato:
 ```
-postgresql://postgres:[SENHA]@db.[REF].supabase.co:6543/postgres?pgbouncer=true
+postgresql://postgres.SEU_REF:[SENHA]@aws-1-REGIAO.pooler.supabase.com:5432/postgres
 ```
 
-A URL direta fica assim:
-```
-postgresql://postgres:[SENHA]@db.[REF].supabase.co:5432/postgres
-```
+> **Atenção:** A senha pode ter `/` — codifique como `%2F` na URL.
+> Ex: `senha2j/3WU` → `senha2j%2F3WU`
 
 ---
 
 ## 2. Configurar variáveis locais
 
 ```bash
-# Copie o arquivo de exemplo
 cp .env.example .env
-
-# Edite .env com suas URLs reais do Supabase
 ```
 
-Conteúdo do `.env`:
+Edite `.env`:
 
 ```env
-DATABASE_URL="postgresql://postgres:[SENHA]@db.[REF].supabase.co:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres:[SENHA]@db.[REF].supabase.co:5432/postgres"
+DATABASE_URL="postgresql://postgres.SEU_REF:SENHA@aws-1-REGIAO.pooler.supabase.com:5432/postgres"
+DIRECT_URL="postgresql://postgres.SEU_REF:SENHA@aws-1-REGIAO.pooler.supabase.com:5432/postgres"
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="cole-aqui-uma-string-aleatoria-segura"
-```
-
-Para gerar o `NEXTAUTH_SECRET`:
-```bash
-# Opção 1 — OpenSSL (Linux/Mac/WSL)
-openssl rand -base64 32
-
-# Opção 2 — Node
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+NEXTAUTH_SECRET="gere-com-node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
 ```
 
 ---
 
-## 3. Rodar a migration
+## 3. Rodar migrations
 
 ```bash
-# Cria as tabelas no banco Supabase
-npx prisma migrate dev --name init
+# Aplica todas as migrations pendentes (init + multi_tenant)
+npx prisma migrate deploy
 ```
 
-Se preferir sem histórico de migration (mais simples):
-```bash
-npx prisma db push
+Esperado:
 ```
-
-> Use `migrate dev` para desenvolvimento com histórico versionado.
-> Use `db push` para prototipação rápida.
+2 migrations found in prisma/migrations
+All migrations have been successfully applied.
+```
 
 ---
 
@@ -98,13 +85,13 @@ npx prisma db push
 npm run db:seed
 ```
 
-Isso cria:
-- Usuário **admin**: `admin@borracharia.com` / `admin123`
-- Usuário **operador**: `operador@borracharia.com` / `operador123`
-- 10 tipos de serviço
-- 10 categorias de despesa
+O seed cria:
+- **SYSTEM_ADMIN:** `gustavo.sbcarvalho@gmail.com` / `sysadmin123`
+- **Borracharia Piloto** com tipos de serviço e categorias padrão
+- **Admin piloto:** `admin@borracharia.com` / `admin123`
+- **Operador piloto:** `operador@borracharia.com` / `operador123`
 
-> ⚠️ **Troque as senhas após o primeiro login!**
+> ⚠️ **Troque todas as senhas após o primeiro login!**
 
 ---
 
@@ -114,103 +101,98 @@ Isso cria:
 npm run dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000) e faça login com as credenciais do seed.
+Fluxo de teste:
+1. Acesse `http://localhost:3000`
+2. Selecione "Borracharia Piloto"
+3. Faça login como admin ou operador
+4. Para acessar o painel admin: use "Acesso administrativo do sistema" no login
 
 ---
 
 ## 6. Publicar na Vercel
 
-### 6.1 Subir o código para o GitHub
-
-```bash
-git init
-git add .
-git commit -m "feat: borracharia facil MVP"
-git branch -M main
-git remote add origin https://github.com/gustavosbcarvalho/BorrachariaFacil.git
-git push -u origin main
-```
-
-### 6.2 Importar projeto na Vercel
+### 6.1 Importar o projeto
 
 1. Acesse [vercel.com/new](https://vercel.com/new)
-2. Clique em **Import** no repositório `borracharia-facil`
-3. Framework Preset: **Next.js** (detectado automaticamente)
-4. Clique em **Environment Variables** e adicione:
+2. Importe `gustavosbcarvalho/BorrachariaFacil`
+3. Framework Preset: **Next.js** (obrigatório — se aparecer "Other", corrigir em Settings)
 
-| Chave | Valor |
+### 6.2 Variáveis de ambiente na Vercel
+
+Adicione as 4 variáveis em **Settings → Environment Variables**:
+
+| Variável | Valor |
 |---|---|
-| `DATABASE_URL` | URL com pgbouncer (porta 6543) |
-| `DIRECT_URL` | URL direta (porta 5432) |
-| `NEXTAUTH_SECRET` | String aleatória gerada no passo 2 |
-| `NEXTAUTH_URL` | URL do seu deploy (ex: `https://borracharia.vercel.app`) |
+| `DATABASE_URL` | URL do Session Pooler Supabase |
+| `DIRECT_URL` | Mesma URL |
+| `NEXTAUTH_URL` | URL do deploy (ex: `https://borrachariafacil.vercel.app`) |
+| `NEXTAUTH_SECRET` | String aleatória segura (hex de 64 chars) |
 
-> ⚠️ O `NEXTAUTH_URL` deve ser a URL **final** do deploy. Se mudar o domínio, atualize essa variável.
+> **Importante:** `NEXTAUTH_URL` deve ser exatamente a URL final do deploy, sem barra no final.
 
-5. Clique em **Deploy**
+### 6.3 Deploy
 
-### 6.3 Rodar migration em produção (uma vez)
+Clique em **Deploy**. O build roda:
+```
+prisma generate && next build
+```
 
-Após o deploy, rode a migration apontando para o banco de produção:
+O `prisma generate` garante que o Prisma Client usa o schema correto.
+
+### 6.4 Rodar migrations em produção
+
+Após o deploy, com as variáveis de produção no `.env` local:
 
 ```bash
-# No terminal local, com as variáveis de produção no .env
 npx prisma migrate deploy
-
-# E o seed (apenas uma vez)
 npm run db:seed
 ```
 
-Ou configure no Supabase via **SQL Editor** se preferir.
+---
+
+## 7. Configurar a borracharia piloto (SYSTEM_ADMIN)
+
+1. Acesse `https://borrachariafacil.vercel.app`
+2. Clique em **"Acesso administrativo do sistema"**
+3. Login: `gustavo.sbcarvalho@gmail.com` / `sysadmin123`
+4. Vá em **/admin → Borracharias**
+5. Clique em **"Borracharia Piloto"** para editar os dados reais (CNPJ, endereço, etc.)
+6. Crie o usuário administrador real da borracharia
 
 ---
 
-## 7. Domínio personalizado (opcional)
+## 8. Adicionar nova borracharia (futuro)
 
-1. Na Vercel → projeto → **Settings** → **Domains**
-2. Adicione seu domínio
-3. Atualize o `NEXTAUTH_URL` para o novo domínio e faça redeploy
+1. Login como SYSTEM_ADMIN → `/admin`
+2. **Nova Borracharia** → preencha dados + usuário admin inicial
+3. Tipos de serviço e categorias padrão são criados automaticamente
+4. O operador/admin da borracharia pode personalizar depois em **Configurações**
 
 ---
 
-## 8. Checklist de testes manuais pelo celular
+## 9. Checklist de testes manuais pelo celular
 
-### Login
-- [ ] Abre a URL no navegador do celular
-- [ ] Tela de login aparece corretamente
-- [ ] Login com credenciais erradas mostra erro
-- [ ] Login com admin funciona → redireciona para dashboard
-- [ ] Login com operador funciona → redireciona para dashboard
-- [ ] Botão sair funciona
+Ver arquivo [CHECKLIST.md](CHECKLIST.md)
 
-### Dashboard
-- [ ] Cards de hoje aparecem (mesmo zerados)
-- [ ] Botões "Novo Serviço" e "Nova Despesa" estão visíveis e grandes
-- [ ] Admin vê cards do mês e links de Relatórios/Histórico
-- [ ] Operador NÃO vê relatórios nem histórico
+---
 
-### Serviços (operador)
-- [ ] Formulário abre corretamente
-- [ ] Campos de seleção de pagamento e status são tocáveis
-- [ ] Data/hora preenchida automaticamente
-- [ ] Salvar volta para o dashboard
-- [ ] Card "Entradas de hoje" atualiza
+## Comandos úteis
 
-### Despesas (operador)
-- [ ] Formulário abre corretamente
-- [ ] Opções de "Com nota" / "Sem nota" funcionam
-- [ ] Salvar volta para o dashboard
+```bash
+# Desenvolvimento
+npm run dev
 
-### Relatórios (admin)
-- [ ] Aba "Hoje" mostra dados corretos
-- [ ] Aba "Semana" e "Mês" funcionam
-- [ ] Totais batem com o que foi lançado
+# Build de produção (verificar erros)
+npm run build
 
-### Configurações (admin)
-- [ ] Lista de tipos de serviço aparece
-- [ ] Adicionar novo tipo de serviço funciona
-- [ ] Ativar/desativar tipo funciona
-- [ ] Mesmo para categorias de despesa
+# Migrations
+npx prisma migrate deploy      # aplica migrations pendentes
+npx prisma migrate status      # verifica estado das migrations
+
+# Dados
+npm run db:seed                # popula banco inicial
+npx prisma studio              # interface visual do banco (local)
+```
 
 ---
 
@@ -218,19 +200,7 @@ Ou configure no Supabase via **SQL Editor** se preferir.
 
 | Serviço | Free tier | Limite |
 |---|---|---|
-| Vercel | Hobby (gratuito) | 100 GB bandwidth/mês, deploys ilimitados |
+| Vercel | Hobby (gratuito) | 100 GB bandwidth/mês |
 | Supabase | Free | 500 MB banco, 50k req/mês, 2 projetos |
 
-Para o porte de uma borracharia pequena, esses limites são **mais que suficientes**.
-
----
-
-## Comandos úteis
-
-```bash
-npm run dev          # Servidor de desenvolvimento
-npm run build        # Build de produção (verificar erros)
-npm run db:seed      # Popular banco com dados iniciais
-npx prisma studio    # Interface visual do banco (local)
-npx prisma migrate dev --name <nome>  # Nova migration
-```
+Para uma borracharia pequena esses limites são mais que suficientes.
