@@ -1,24 +1,29 @@
-import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/AppShell";
 import { Header } from "@/components/Header";
 import { ServiceForm } from "@/components/ServiceForm";
+import { getTenantSession } from "@/lib/tenant";
 
 export default async function NewServicePage() {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await getTenantSession();
 
-  const serviceTypes = await prisma.serviceType.findMany({
-    where: { active: true },
-    orderBy: { name: "asc" },
-  });
+  const [serviceTypes, convenios] = await Promise.all([
+    prisma.serviceType.findMany({
+      where: { active: true, borrachariaId: session.user.borrachariaId! },
+      orderBy: { name: "asc" },
+    }),
+    prisma.convenio.findMany({
+      where: { active: true, borrachariaId: session.user.borrachariaId! },
+      orderBy: { companyName: "asc" },
+    }),
+  ]);
 
   return (
     <AppShell>
       <Header title="Novo Serviço" />
       <div className="px-4 py-4">
-        <ServiceForm serviceTypes={serviceTypes} />
+        <ServiceForm serviceTypes={serviceTypes} convenios={convenios} />
       </div>
     </AppShell>
   );

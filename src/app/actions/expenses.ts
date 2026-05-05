@@ -3,12 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getTenantSession } from "@/lib/tenant";
 import { PaymentMethod } from "@prisma/client";
 
 export async function createExpense(formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await getTenantSession();
 
   const categoryId = formData.get("categoryId") as string;
   const description = formData.get("description") as string;
@@ -25,6 +24,7 @@ export async function createExpense(formData: FormData) {
   await prisma.expense.create({
     data: {
       userId: session.user.id,
+      borrachariaId: session.user.borrachariaId,
       categoryId,
       description,
       amount: parseFloat(amount),
@@ -41,8 +41,14 @@ export async function createExpense(formData: FormData) {
 }
 
 export async function deleteExpense(id: string) {
-  const session = await getSession();
-  if (!session || session.user.role !== "ADMIN") redirect("/login");
+  const session = await getTenantSession();
+  if (session.user.role !== "ADMIN") redirect("/login");
+
+  // Garante que a despesa pertence à borracharia do usuário
+  const expense = await prisma.expense.findFirst({
+    where: { id, borrachariaId: session.user.borrachariaId! },
+  });
+  if (!expense) return;
 
   await prisma.expense.delete({ where: { id } });
 

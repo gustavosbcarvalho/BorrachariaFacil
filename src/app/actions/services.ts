@@ -3,18 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getTenantSession } from "@/lib/tenant";
 import { PaymentMethod } from "@prisma/client";
 
 export async function createService(formData: FormData) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await getTenantSession();
 
   const serviceTypeId = formData.get("serviceTypeId") as string;
   const description = formData.get("description") as string;
   const amount = formData.get("amount") as string;
   const paymentMethod = formData.get("paymentMethod") as PaymentMethod;
   const paymentStatus = formData.get("paymentStatus") as string;
+  const convenioId = formData.get("convenioId") as string | null;
   const notes = formData.get("notes") as string;
   const occurredAt = formData.get("occurredAt") as string;
 
@@ -23,6 +23,7 @@ export async function createService(formData: FormData) {
   }
 
   const amountNum = parseFloat(amount);
+  const isConvenio = paymentMethod === "CONVENIO";
   const isPaid = paymentStatus === "PAID" || paymentStatus === "COURTESY";
 
   await prisma.service.create({
@@ -32,10 +33,11 @@ export async function createService(formData: FormData) {
       serviceTypeId,
       description: description || null,
       amount: amountNum,
-      amountPaid: isPaid ? amountNum : 0,
-      amountDue: isPaid ? 0 : amountNum,
+      amountPaid: isPaid && !isConvenio ? amountNum : 0,
+      amountDue: isPaid && !isConvenio ? 0 : amountNum,
       paymentMethod,
-      paymentStatus: paymentStatus as never,
+      paymentStatus: (isConvenio ? "PENDING" : paymentStatus) as never,
+      convenioId: convenioId || null,
       notes: notes || null,
       occurredAt: new Date(occurredAt),
     },
@@ -47,10 +49,12 @@ export async function createService(formData: FormData) {
 }
 
 export async function updateServiceStatus(id: string, paymentStatus: string) {
-  const session = await getSession();
-  if (!session) redirect("/login");
+  const session = await getTenantSession();
 
-  const service = await prisma.service.findUnique({ where: { id } });
+  // Valida que o serviço pertence à borracharia do usuário
+  const service = await prisma.service.findFirst({
+    where: { id, borrachariaId: session.user.borrachariaId! },
+  });
   if (!service) return;
 
   await prisma.service.update({
@@ -67,8 +71,14 @@ export async function updateServiceStatus(id: string, paymentStatus: string) {
 }
 
 export async function deleteService(id: string) {
-  const session = await getSession();
-  if (!session || session.user.role !== "ADMIN") redirect("/login");
+  const session = await getTenantSession();
+  if (session.user.role !== "ADMIN") redirect("/login");
+
+  // Valida que o serviço pertence à borracharia do usuário
+  const service = await prisma.service.findFirst({
+    where: { id, borrachariaId: session.user.borrachariaId! },
+  });
+  if (!service) return;
 
   await prisma.service.delete({ where: { id } });
 
