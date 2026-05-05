@@ -44,11 +44,7 @@ export function BottomNav() {
                 active ? "text-blue-600" : "text-gray-500"
               }`}
             >
-              <Icon
-                className={`w-6 h-6 mb-0.5 ${
-                  active ? "text-blue-600" : "text-gray-400"
-                }`}
-              />
+              <Icon className={`w-6 h-6 mb-0.5 ${active ? "text-blue-600" : "text-gray-400"}`} />
               {item.label}
             </Link>
           );
