@@ -16,13 +16,13 @@ async function getReportData(borrachariaId: string) {
 
   const svc = (range: { gte: Date; lte: Date }) =>
     prisma.service.findMany({
-      where: { borrachariaId, occurredAt: range },
+      where: { borrachariaId, deletedAt: null, occurredAt: range },
       include: { serviceType: true },
     });
 
   const exp = (range: { gte: Date; lte: Date }) =>
     prisma.expense.findMany({
-      where: { borrachariaId, occurredAt: range },
+      where: { borrachariaId, deletedAt: null, occurredAt: range },
       include: { category: true },
     });
 

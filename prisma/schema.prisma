@@ -60,12 +60,14 @@ model Borracharia {
   city              String
   state             String
   zipCode           String     @map("zip_code")
+  timezone          String     @default("America/Sao_Paulo")
   active            Boolean    @default(true)
   planStatus        PlanStatus @default(TRIAL) @map("plan_status")
   planName          PlanName   @default(FREE) @map("plan_name")
   trialEndsAt       DateTime?  @map("trial_ends_at")
   subscriptionNotes String?    @map("subscription_notes")
   createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
 
   users             User[]
   services          Service[]
@@ -73,6 +75,7 @@ model Borracharia {
   serviceTypes      ServiceType[]
   expenseCategories ExpenseCategory[]
   convenios         Convenio[]
+  companies         Company[]
 
   @@map("borracharias")
 }
@@ -80,18 +83,22 @@ model Borracharia {
 // ─── Usuários ─────────────────────────────────────────────────────────────────
 
 model User {
-  id            String       @id @default(cuid())
-  name          String
-  email         String       @unique
-  passwordHash  String       @map("password_hash")
-  role          Role         @default(OPERATOR)
-  active        Boolean      @default(true)
-  borrachariaId String?      @map("borracharia_id")
-  createdAt     DateTime     @default(now()) @map("created_at")
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  passwordHash       String    @map("password_hash")
+  role               Role      @default(OPERATOR)
+  active             Boolean   @default(true)
+  mustChangePassword Boolean   @default(true) @map("must_change_password")
+  borrachariaId      String?   @map("borracharia_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  borracharia Borracharia? @relation(fields: [borrachariaId], references: [id])
-  services    Service[]
-  expenses    Expense[]
+  borracharia     Borracharia? @relation(fields: [borrachariaId], references: [id])
+  services        Service[]    @relation("ServiceCreatedBy")
+  updatedServices Service[]    @relation("ServiceUpdatedBy")
+  expenses        Expense[]    @relation("ExpenseCreatedBy")
+  updatedExpenses Expense[]    @relation("ExpenseUpdatedBy")
 
   @@map("users")
 }
@@ -111,14 +118,36 @@ model ServiceType {
   @@map("service_types")
 }
 
+// ─── Empresas (para Convênios) ────────────────────────────────────────────────
+
+model Company {
+  id            String      @id @default(cuid())
+  borrachariaId String      @map("borracharia_id")
+  name          String
+  cnpj          String?
+  contactName   String?     @map("contact_name")
+  phone         String?
+  active        Boolean     @default(true)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  borracharia Borracharia @relation(fields: [borrachariaId], references: [id])
+  convenios   Convenio[]
+
+  @@index([borrachariaId])
+  @@map("companies")
+}
+
 // ─── Serviços Executados ──────────────────────────────────────────────────────
 
 model Service {
   id                String        @id @default(cuid())
   userId            String        @map("user_id")
+  updatedById       String?       @map("updated_by_id")
   borrachariaId     String?       @map("borracharia_id")
   serviceTypeId     String        @map("service_type_id")
   description       String?
+  vehiclePlate      String?       @map("vehicle_plate")
   amount            Decimal       @db.Decimal(10, 2)
   amountPaid        Decimal       @default(0) @db.Decimal(10, 2) @map("amount_paid")
   amountDue         Decimal       @default(0) @db.Decimal(10, 2) @map("amount_due")
@@ -129,13 +158,23 @@ model Service {
   notes             String?
   occurredAt        DateTime      @map("occurred_at")
   createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  deletedAt         DateTime?     @map("deleted_at")
 
-  user            User             @relation(fields: [userId], references: [id])
+  user            User             @relation("ServiceCreatedBy", fields: [userId], references: [id])
+  updatedBy       User?            @relation("ServiceUpdatedBy", fields: [updatedById], references: [id])
   borracharia     Borracharia?     @relation(fields: [borrachariaId], references: [id])
   serviceType     ServiceType      @relation(fields: [serviceTypeId], references: [id])
   convenio        Convenio?        @relation(fields: [convenioId], references: [id])
   convenioPayment ConvenioPayment? @relation(fields: [convenioPaymentId], references: [id])
 
+  @@index([borrachariaId])
+  @@index([occurredAt])
+  @@index([paymentMethod])
+  @@index([paymentStatus])
+  @@index([convenioId])
+  @@index([vehiclePlate])
+  @@index([deletedAt])
   @@map("services")
 }
 
@@ -159,6 +198,7 @@ model ExpenseCategory {
 model Expense {
   id            String          @id @default(cuid())
   userId        String          @map("user_id")
+  updatedById   String?         @map("updated_by_id")
   borrachariaId String?         @map("borracharia_id")
   categoryId    String          @map("category_id")
   description   String
@@ -168,11 +208,18 @@ model Expense {
   notes         String?
   occurredAt    DateTime        @map("occurred_at")
   createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  deletedAt     DateTime?       @map("deleted_at")
 
-  user        User            @relation(fields: [userId], references: [id])
+  user        User            @relation("ExpenseCreatedBy", fields: [userId], references: [id])
+  updatedBy   User?           @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id])
   borracharia Borracharia?    @relation(fields: [borrachariaId], references: [id])
   category    ExpenseCategory @relation(fields: [categoryId], references: [id])
 
+  @@index([borrachariaId])
+  @@index([occurredAt])
+  @@index([paymentMethod])
+  @@index([deletedAt])
   @@map("expenses")
 }
 
@@ -181,17 +228,23 @@ model Expense {
 model Convenio {
   id               String           @id @default(cuid())
   borrachariaId    String           @map("borracharia_id")
-  companyName      String           @map("company_name")
+  companyId        String?          @map("company_id")
+  companyName      String           @map("company_name") // mantido para dados existentes
   paymentFrequency PaymentFrequency @map("payment_frequency")
   nextPaymentDate  DateTime         @map("next_payment_date")
   active           Boolean          @default(true)
   notes            String?
   createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  deletedAt        DateTime?        @map("deleted_at")
 
   borracharia Borracharia      @relation(fields: [borrachariaId], references: [id])
+  company     Company?         @relation(fields: [companyId], references: [id])
   services    Service[]
   payments    ConvenioPayment[]
 
+  @@index([borrachariaId])
+  @@index([deletedAt])
   @@map("convenios")
 }
 
@@ -208,5 +261,6 @@ model ConvenioPayment {
   convenio Convenio  @relation(fields: [convenioId], references: [id])
   services Service[]
 
+  @@index([convenioId])
   @@map("convenio_payments")
 }

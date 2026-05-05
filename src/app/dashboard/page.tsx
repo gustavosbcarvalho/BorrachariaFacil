@@ -24,33 +24,34 @@ async function getDashboardData(borrachariaId: string) {
     pendingConvenioCount,
   ] = await Promise.all([
     prisma.service.aggregate({
-      where: { ...base, occurredAt: { gte: todayStart, lte: todayEnd }, paymentStatus: { not: "COURTESY" } },
+      where: { ...base, deletedAt: null, occurredAt: { gte: todayStart, lte: todayEnd }, paymentStatus: { not: "COURTESY" } },
       _sum: { amount: true },
       _count: true,
     }),
     prisma.expense.aggregate({
-      where: { ...base, occurredAt: { gte: todayStart, lte: todayEnd } },
+      where: { ...base, deletedAt: null, occurredAt: { gte: todayStart, lte: todayEnd } },
       _sum: { amount: true },
       _count: true,
     }),
     prisma.service.aggregate({
-      where: { ...base, occurredAt: { gte: monthStart, lte: monthEnd }, paymentStatus: { not: "COURTESY" } },
+      where: { ...base, deletedAt: null, occurredAt: { gte: monthStart, lte: monthEnd }, paymentStatus: { not: "COURTESY" } },
       _sum: { amount: true },
       _count: true,
     }),
     prisma.expense.aggregate({
-      where: { ...base, occurredAt: { gte: monthStart, lte: monthEnd } },
+      where: { ...base, deletedAt: null, occurredAt: { gte: monthStart, lte: monthEnd } },
       _sum: { amount: true },
       _count: true,
     }),
     prisma.service.count({
-      where: { ...base, paymentStatus: { in: ["PENDING", "PARTIAL"] } },
+      where: { ...base, deletedAt: null, paymentStatus: { in: ["PENDING", "PARTIAL"] } },
     }),
     prisma.convenio.count({
       where: {
         borrachariaId,
+        deletedAt: null,
         active: true,
-        services: { some: { paymentStatus: { in: ["PENDING", "PARTIAL"] } } },
+        services: { some: { paymentStatus: { in: ["PENDING", "PARTIAL"] }, deletedAt: null } },
       },
     }),
   ]);

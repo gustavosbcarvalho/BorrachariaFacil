@@ -13,18 +13,18 @@ export default async function ConveniosPage() {
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
   const convenios = await prisma.convenio.findMany({
-    where: { borrachariaId: session.user.borrachariaId! },
+    where: { borrachariaId: session.user.borrachariaId!, deletedAt: null },
     orderBy: { companyName: "asc" },
     include: {
       _count: {
         select: {
           services: {
-            where: { paymentStatus: { in: ["PENDING", "PARTIAL"] } },
+            where: { paymentStatus: { in: ["PENDING", "PARTIAL"] }, deletedAt: null },
           },
         },
       },
       services: {
-        where: { paymentStatus: { in: ["PENDING", "PARTIAL"] } },
+        where: { paymentStatus: { in: ["PENDING", "PARTIAL"] }, deletedAt: null },
         select: { amountDue: true },
       },
     },

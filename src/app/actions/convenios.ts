@@ -76,6 +76,7 @@ export async function settleConvenio(formData: FormData) {
     where: {
       convenioId,
       paymentStatus: { in: ["PENDING", "PARTIAL"] },
+      deletedAt: null,
     },
     orderBy: { occurredAt: "asc" },
   });

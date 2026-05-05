@@ -25,6 +25,7 @@ export default async function ConvenioPagamentoPage({
     where: {
       convenioId: id,
       paymentStatus: { in: ["PENDING", "PARTIAL"] },
+      deletedAt: null,
     },
     orderBy: { occurredAt: "asc" },
     include: { serviceType: true },

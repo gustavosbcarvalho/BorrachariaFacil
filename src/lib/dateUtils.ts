@@ -1,3 +1,25 @@
+export function parseDateFilter(params: {
+  period?: string;
+  from?: string;
+  to?: string;
+}): { gte?: Date; lte?: Date } | undefined {
+  const now = new Date();
+  if (params.period === "today") return { gte: startOfDay(now), lte: endOfDay(now) };
+  if (params.period === "week") {
+    const d = new Date(now);
+    d.setDate(d.getDate() - 6);
+    return { gte: startOfDay(d), lte: endOfDay(now) };
+  }
+  if (params.period === "month") return { gte: startOfMonth(now), lte: endOfMonth(now) };
+  if (params.from || params.to) {
+    return {
+      ...(params.from ? { gte: startOfDay(new Date(params.from)) } : {}),
+      ...(params.to ? { lte: endOfDay(new Date(params.to)) } : {}),
+    };
+  }
+  return undefined;
+}
+
 export function startOfDay(date: Date): Date {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
