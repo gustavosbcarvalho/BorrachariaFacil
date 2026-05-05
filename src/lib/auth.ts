@@ -28,17 +28,18 @@ export const authOptions: NextAuthOptions = {
 
         if (!user || !user.active) return null;
 
-        // Validação backend: usuário deve pertencer à borracharia selecionada
-        if (borrachariaId) {
-          // Usuário deve pertencer à borracharia informada
+        // Validação backend de tenant
+        if (user.role === Role.SYSTEM_ADMIN) {
+          // SYSTEM_ADMIN sempre pode logar — borracharia selecionada é ignorada
+          // O middleware redireciona para /admin após o login
+        } else if (borrachariaId) {
+          // Usuário regular deve pertencer à borracharia informada
           if (user.borrachariaId !== borrachariaId) return null;
           // Borracharia deve estar ativa
           if (!user.borracharia?.active) return null;
-          // SYSTEM_ADMIN não pode logar com borracharia
-          if (user.role === Role.SYSTEM_ADMIN) return null;
         } else {
-          // Sem borracharia: apenas SYSTEM_ADMIN pode logar
-          if (user.role !== Role.SYSTEM_ADMIN) return null;
+          // Sem borracharia selecionada: apenas SYSTEM_ADMIN pode logar
+          return null;
         }
 
         const passwordOk = await bcrypt.compare(

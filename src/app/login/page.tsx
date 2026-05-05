@@ -205,6 +205,18 @@ export default function LoginPage() {
           <h2 className="text-xl font-semibold text-gray-800 mb-4 text-center">
             Entrar
           </h2>
+          {step === "login" && (
+            <p className="text-xs text-center text-gray-400 mb-4 -mt-2">
+              Admin do sistema?{" "}
+              <button
+                type="button"
+                onClick={() => { setStep("admin"); setError(""); }}
+                className="text-blue-500 underline"
+              >
+                Acesse aqui
+              </button>
+            </p>
+          )}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="label">Email</label>
