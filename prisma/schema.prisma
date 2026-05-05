@@ -61,7 +61,6 @@ model Borracharia {
   state             String
   zipCode           String     @map("zip_code")
   active            Boolean    @default(true)
-  // Campos reservados para futura monetização — não implementar lógica agora
   planStatus        PlanStatus @default(TRIAL) @map("plan_status")
   planName          PlanName   @default(FREE) @map("plan_name")
   trialEndsAt       DateTime?  @map("trial_ends_at")
@@ -87,7 +86,7 @@ model User {
   passwordHash  String       @map("password_hash")
   role          Role         @default(OPERATOR)
   active        Boolean      @default(true)
-  borrachariaId String?      @map("borracharia_id") // null apenas para SYSTEM_ADMIN
+  borrachariaId String?      @map("borracharia_id")
   createdAt     DateTime     @default(now()) @map("created_at")
 
   borracharia Borracharia? @relation(fields: [borrachariaId], references: [id])
