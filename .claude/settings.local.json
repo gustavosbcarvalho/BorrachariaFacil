@@ -20,7 +20,11 @@
       "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('base64'\\)\\)\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
       "Bash(git commit *)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(mkdir -p /c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/admin/borracharias/new && mkdir -p /c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/admin/borracharias/[id] && echo \"ok\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\gustavo.carvalho\\source\\repos\\BorrachariaFacil\\src\\app\\admin\\borracharias"
     ]
   }
 }
