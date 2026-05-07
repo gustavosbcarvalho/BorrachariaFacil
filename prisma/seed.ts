@@ -23,6 +23,7 @@ const MERCOSUL_CNPJ = "61.539.497/0001-05";
 const OLD_PILOT_CNPJ = "00.000.000/0001-00";
 const OLD_ADMIN_EMAIL = "admin@borracharia.com";
 const MERCOSUL_ADMIN_EMAIL = "alexs2007@hotmail.com";
+const MERCOSUL_OPERATOR_EMAIL = "felipealmeidafer55@gmail.com";
 
 const DEMO_IDS = {
   companies: {
@@ -289,6 +290,46 @@ async function createOrUpdateMercosulAdmin(borrachariaId: string) {
       role: Role.ADMIN,
       active: true,
       mustChangePassword: false,
+      borrachariaId,
+    },
+  });
+}
+
+async function createOrUpdateMercosulOperator(borrachariaId: string) {
+  // Primeiro tenta encontrar o operador pelo email correto
+  const byEmail = await prisma.user.findUnique({ where: { email: MERCOSUL_OPERATOR_EMAIL } });
+
+  if (byEmail) {
+    return prisma.user.update({
+      where: { id: byEmail.id },
+      data: { role: Role.OPERATOR, active: true, mustChangePassword: false, borrachariaId },
+    });
+  }
+
+  // Fallback: encontra qualquer OPERATOR existente nesta borracharia e atualiza o email
+  const existing = await prisma.user.findFirst({
+    where: { borrachariaId, role: Role.OPERATOR },
+  });
+
+  if (existing) {
+    return prisma.user.update({
+      where: { id: existing.id },
+      data: { email: MERCOSUL_OPERATOR_EMAIL, role: Role.OPERATOR, active: true, mustChangePassword: false },
+    });
+  }
+
+  // Cria novo operador se não existir nenhum
+  const defaultPassword = await bcrypt.hash("operador123", 10);
+  return prisma.user.upsert({
+    where: { email: MERCOSUL_OPERATOR_EMAIL },
+    update: { role: Role.OPERATOR, active: true, mustChangePassword: true, borrachariaId },
+    create: {
+      name: "Operador",
+      email: MERCOSUL_OPERATOR_EMAIL,
+      passwordHash: defaultPassword,
+      role: Role.OPERATOR,
+      active: true,
+      mustChangePassword: true,
       borrachariaId,
     },
   });
@@ -731,8 +772,9 @@ async function main() {
   console.log(`✅ Mercosul: ${mercosul.name}`);
 
   const mercosulAdmin = await createOrUpdateMercosulAdmin(mercosul.id);
-  console.log(`✅ Admin Mercosul: ${mercosulAdmin.email}`);
-  console.log("   Operador Mercosul preservado sem alteracao de senha.");
+  const mercosulOperator = await createOrUpdateMercosulOperator(mercosul.id);
+  console.log(`✅ Admin Mercosul:    ${mercosulAdmin.email}`);
+  console.log(`✅ Operador Mercosul: ${mercosulOperator.email}`);
 
   await createServiceTypes(mercosul.id);
   await createExpenseCategories(mercosul.id);
