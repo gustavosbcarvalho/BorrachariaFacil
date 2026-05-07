@@ -172,4 +172,4 @@ Teste com o celular em modo retrato (vertical). Cada item deve ser verificado an
 
 ## Resultado esperado
 
-Todos os itens marcados = sistema pronto para uso em produção pela borracharia piloto.
+Todos os itens marcados = sistema pronto para uso em produção pela borracharia real validada.

@@ -61,7 +61,7 @@ export default function NewBorrachariaPage() {
         </div>
         <div>
           <label className="label">Email do admin *</label>
-          <input name="adminEmail" type="email" required className="input" placeholder="admin@borracharia.com" />
+          <input name="adminEmail" type="email" required className="input" placeholder="admin@exemplo.com" />
         </div>
         <div>
           <label className="label">Senha inicial *</label>

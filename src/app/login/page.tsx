@@ -3,12 +3,76 @@
 import { useState, useEffect, useCallback } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Loader2, Search, MapPin, ChevronRight, ArrowLeft, Wrench } from "lucide-react";
+import { Loader2, Search, MapPin, ChevronRight, ArrowLeft, Wrench, LogIn } from "lucide-react";
+import { DEMO_BORRACHARIA, DEMO_CREDENTIALS } from "@/lib/demo";
 
 type Borracharia = { id: string; name: string; city: string; state: string };
 type Step = "select" | "login" | "admin";
 
 const STORAGE_KEY = "borracharia_selecionada";
+
+function DemoAccess({
+  loading,
+  error,
+  onQuickLogin,
+}: {
+  loading: boolean;
+  error?: string;
+  onQuickLogin: () => void;
+}) {
+  return (
+    <details className="group border-t border-gray-100 pt-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-gray-800">Ambiente de Demonstração</p>
+          <p className="truncate text-xs text-gray-500">{DEMO_BORRACHARIA.name}</p>
+        </div>
+        <span className="text-xs font-semibold text-blue-600 group-open:hidden">ver acesso</span>
+        <span className="hidden text-xs font-semibold text-blue-600 group-open:inline">ocultar</span>
+      </summary>
+
+      <div className="space-y-3 pt-3">
+        <div className="space-y-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-gray-700">
+          <p className="font-semibold text-gray-800">{DEMO_BORRACHARIA.name}</p>
+          <div>
+            <p className="font-medium">{DEMO_CREDENTIALS.admin.label}</p>
+            <p className="break-all font-mono text-[11px]">{DEMO_CREDENTIALS.admin.email}</p>
+            <p>Senha: {DEMO_CREDENTIALS.admin.password}</p>
+          </div>
+          <div>
+            <p className="font-medium">{DEMO_CREDENTIALS.operator.label}</p>
+            <p className="break-all font-mono text-[11px]">{DEMO_CREDENTIALS.operator.email}</p>
+            <p>Senha: {DEMO_CREDENTIALS.operator.password}</p>
+          </div>
+        </div>
+
+        {error && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={onQuickLogin}
+          disabled={loading}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition-colors active:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" /> Entrando...
+            </>
+          ) : (
+            <>
+              <LogIn className="h-4 w-4 flex-shrink-0" />
+              <span className="text-center leading-snug">Entrar no ambiente de demonstração</span>
+            </>
+          )}
+        </button>
+      </div>
+    </details>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,6 +85,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   // Recupera borracharia salva no localStorage
   useEffect(() => {
@@ -101,6 +166,48 @@ export default function LoginPage() {
     }
   }
 
+  async function handleDemoLogin() {
+    setDemoLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/borracharias?q=${encodeURIComponent(DEMO_BORRACHARIA.name)}`);
+      const data = (await res.json()) as Borracharia[];
+      const demo = data.find((b) => b.name === DEMO_BORRACHARIA.name);
+
+      if (!res.ok || !demo) {
+        setError("Ambiente de demonstração não encontrado. Rode o seed do banco.");
+        setDemoLoading(false);
+        return;
+      }
+
+      setSelected(demo);
+      setStep("login");
+      setEmail(DEMO_CREDENTIALS.admin.email);
+      setPassword(DEMO_CREDENTIALS.admin.password);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
+
+      const result = await signIn("credentials", {
+        email: DEMO_CREDENTIALS.admin.email,
+        password: DEMO_CREDENTIALS.admin.password,
+        borrachariaId: demo.id,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Não foi possível entrar no ambiente de demonstração.");
+        setDemoLoading(false);
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch {
+      setError("Não foi possível entrar no ambiente de demonstração.");
+      setDemoLoading(false);
+    }
+  }
+
   // ─── Tela de seleção de borracharia ──────────────────────────────────────
   if (step === "select") {
     return (
@@ -165,6 +272,12 @@ export default function LoginPage() {
           >
             Acesso administrativo do sistema
           </button>
+
+          <DemoAccess
+            loading={demoLoading}
+            error={error}
+            onQuickLogin={handleDemoLogin}
+          />
         </div>
       </div>
     );
@@ -257,6 +370,13 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+        </div>
+
+        <div className="card">
+          <DemoAccess
+            loading={demoLoading}
+            onQuickLogin={handleDemoLogin}
+          />
         </div>
       </div>
     </div>

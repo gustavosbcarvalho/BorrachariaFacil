@@ -96,9 +96,11 @@ npm run db:seed
 
 O seed cria:
 - **SYSTEM_ADMIN:** `gustavo.sbcarvalho@gmail.com` / `sysadmin123`
-- **Borracharia Piloto** com tipos de serviço e categorias padrão
-- **Admin piloto:** `admin@borracharia.com` / `admin123`
-- **Operador piloto:** `operador@borracharia.com` / `operador123`
+- **Borracharia Mercosul - 61.539.497/0001-05** com tipos de serviço e categorias padrão
+- **Admin Mercosul:** `alexs2007@hotmail.com` / senha atual
+- **Borracharia Teste** com dados fictícios DEMO, serviços, despesas, convênios, clientes, tipos e categorias
+- **Admin demo:** `admin.demo@borrachariafacil.com` / `demo123`
+- **Operador demo:** `operador.demo@borrachariafacil.com` / `demo123`
 
 > ⚠️ **Troque todas as senhas após o primeiro login!**
 
@@ -112,8 +114,8 @@ npm run dev
 
 Fluxo de teste:
 1. Acesse `http://localhost:3000`
-2. Selecione "Borracharia Piloto"
-3. Faça login como admin ou operador
+2. Abra "Ambiente de Demonstração"
+3. Use o botão "Entrar no ambiente de demonstração"
 4. Para acessar o painel admin: use "Acesso administrativo do sistema" no login
 
 ---
@@ -159,14 +161,14 @@ npm run db:seed
 
 ---
 
-## 7. Configurar a borracharia piloto (SYSTEM_ADMIN)
+## 7. Configurar a Borracharia Mercosul (SYSTEM_ADMIN)
 
 1. Acesse `https://borrachariafacil.vercel.app`
 2. Clique em **"Acesso administrativo do sistema"**
 3. Login: `gustavo.sbcarvalho@gmail.com` / `sysadmin123`
 4. Vá em **/admin → Borracharias**
-5. Clique em **"Borracharia Piloto"** para editar os dados reais (CNPJ, endereço, etc.)
-6. Crie o usuário administrador real da borracharia
+5. Clique em **"Borracharia Mercosul - 61.539.497/0001-05"** para revisar os dados reais (endereço, cidade, CEP, etc.)
+6. O administrador configurado é `alexs2007@hotmail.com`; mantenha o operador existente sem alterar senha.
 
 ---
 

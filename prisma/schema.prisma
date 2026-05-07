@@ -52,22 +52,34 @@ enum PlanName {
 // ─── Borracharias (tenants) ───────────────────────────────────────────────────
 
 model Borracharia {
-  id                String     @id @default(cuid())
-  name              String
-  cnpj              String?    @unique
-  cpf               String?
-  address           String
-  city              String
-  state             String
-  zipCode           String     @map("zip_code")
-  timezone          String     @default("America/Sao_Paulo")
-  active            Boolean    @default(true)
-  planStatus        PlanStatus @default(TRIAL) @map("plan_status")
-  planName          PlanName   @default(FREE) @map("plan_name")
-  trialEndsAt       DateTime?  @map("trial_ends_at")
-  subscriptionNotes String?    @map("subscription_notes")
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
+  id                   String     @id @default(cuid())
+  name                 String
+  cnpj                 String?    @unique
+  cpf                  String?
+  address              String
+  city                 String
+  state                String
+  zipCode              String     @map("zip_code")
+  timezone             String     @default("America/Sao_Paulo")
+  active               Boolean    @default(true)
+  planStatus           PlanStatus @default(TRIAL) @map("plan_status")
+  planName             PlanName   @default(FREE) @map("plan_name")
+  trialEndsAt          DateTime?  @map("trial_ends_at")
+  subscriptionNotes    String?    @map("subscription_notes")
+  publicListingEnabled Boolean    @default(false) @map("public_listing_enabled")
+  publicName           String?    @map("public_name")
+  publicDescription    String?    @map("public_description")
+  publicPhone          String?    @map("public_phone")
+  whatsappNumber       String?    @map("whatsapp_number")
+  latitude             Decimal?   @db.Decimal(10, 7)
+  longitude            Decimal?   @db.Decimal(10, 7)
+  openingHours         Json?      @map("opening_hours")
+  logoUrl              String?    @map("logo_url")
+  isDemo               Boolean    @default(false) @map("is_demo")
+  demoSeedVersion      Int?       @map("demo_seed_version")
+  demoLastSeededAt     DateTime?  @map("demo_last_seeded_at")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
 
   users             User[]
   services          Service[]
@@ -77,22 +89,24 @@ model Borracharia {
   convenios         Convenio[]
   companies         Company[]
 
+  @@index([isDemo])
+  @@index([publicListingEnabled])
   @@map("borracharias")
 }
 
 // ─── Usuários ─────────────────────────────────────────────────────────────────
 
 model User {
-  id                 String    @id @default(cuid())
+  id                 String   @id @default(cuid())
   name               String
-  email              String    @unique
-  passwordHash       String    @map("password_hash")
-  role               Role      @default(OPERATOR)
-  active             Boolean   @default(true)
-  mustChangePassword Boolean   @default(true) @map("must_change_password")
-  borrachariaId      String?   @map("borracharia_id")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  email              String   @unique
+  passwordHash       String   @map("password_hash")
+  role               Role     @default(OPERATOR)
+  active             Boolean  @default(true)
+  mustChangePassword Boolean  @default(true) @map("must_change_password")
+  borrachariaId      String?  @map("borracharia_id")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   borracharia     Borracharia? @relation(fields: [borrachariaId], references: [id])
   services        Service[]    @relation("ServiceCreatedBy")
@@ -106,10 +120,12 @@ model User {
 // ─── Tipos de Serviço ─────────────────────────────────────────────────────────
 
 model ServiceType {
-  id            String       @id @default(cuid())
+  id            String   @id @default(cuid())
   name          String
-  active        Boolean      @default(true)
-  borrachariaId String?      @map("borracharia_id")
+  active        Boolean  @default(true)
+  isPublic      Boolean  @default(false) @map("is_public")
+  startingPrice Decimal? @map("starting_price") @db.Decimal(10, 2)
+  borrachariaId String?  @map("borracharia_id")
 
   borracharia Borracharia? @relation(fields: [borrachariaId], references: [id])
   services    Service[]
@@ -121,15 +137,15 @@ model ServiceType {
 // ─── Empresas (para Convênios) ────────────────────────────────────────────────
 
 model Company {
-  id            String      @id @default(cuid())
-  borrachariaId String      @map("borracharia_id")
+  id            String   @id @default(cuid())
+  borrachariaId String   @map("borracharia_id")
   name          String
   cnpj          String?
-  contactName   String?     @map("contact_name")
+  contactName   String?  @map("contact_name")
   phone         String?
-  active        Boolean     @default(true)
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   borracharia Borracharia @relation(fields: [borrachariaId], references: [id])
   convenios   Convenio[]
@@ -149,8 +165,8 @@ model Service {
   description       String?
   vehiclePlate      String?       @map("vehicle_plate")
   amount            Decimal       @db.Decimal(10, 2)
-  amountPaid        Decimal       @default(0) @db.Decimal(10, 2) @map("amount_paid")
-  amountDue         Decimal       @default(0) @db.Decimal(10, 2) @map("amount_due")
+  amountPaid        Decimal       @default(0) @map("amount_paid") @db.Decimal(10, 2)
+  amountDue         Decimal       @default(0) @map("amount_due") @db.Decimal(10, 2)
   paymentMethod     PaymentMethod @map("payment_method")
   paymentStatus     PaymentStatus @default(PAID) @map("payment_status")
   convenioId        String?       @map("convenio_id")
@@ -181,10 +197,10 @@ model Service {
 // ─── Categorias de Despesa ────────────────────────────────────────────────────
 
 model ExpenseCategory {
-  id            String       @id @default(cuid())
+  id            String  @id @default(cuid())
   name          String
-  active        Boolean      @default(true)
-  borrachariaId String?      @map("borracharia_id")
+  active        Boolean @default(true)
+  borrachariaId String? @map("borracharia_id")
 
   borracharia Borracharia? @relation(fields: [borrachariaId], references: [id])
   expenses    Expense[]
@@ -196,20 +212,20 @@ model ExpenseCategory {
 // ─── Despesas / Gastos ────────────────────────────────────────────────────────
 
 model Expense {
-  id            String          @id @default(cuid())
-  userId        String          @map("user_id")
-  updatedById   String?         @map("updated_by_id")
-  borrachariaId String?         @map("borracharia_id")
-  categoryId    String          @map("category_id")
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  updatedById   String?       @map("updated_by_id")
+  borrachariaId String?       @map("borracharia_id")
+  categoryId    String        @map("category_id")
   description   String
-  amount        Decimal         @db.Decimal(10, 2)
-  paymentMethod PaymentMethod   @map("payment_method")
-  hasReceipt    Boolean         @default(false) @map("has_receipt")
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod @map("payment_method")
+  hasReceipt    Boolean       @default(false) @map("has_receipt")
   notes         String?
-  occurredAt    DateTime        @map("occurred_at")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-  deletedAt     DateTime?       @map("deleted_at")
+  occurredAt    DateTime      @map("occurred_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  deletedAt     DateTime?     @map("deleted_at")
 
   user        User            @relation("ExpenseCreatedBy", fields: [userId], references: [id])
   updatedBy   User?           @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id])
@@ -238,8 +254,8 @@ model Convenio {
   updatedAt        DateTime         @updatedAt @map("updated_at")
   deletedAt        DateTime?        @map("deleted_at")
 
-  borracharia Borracharia      @relation(fields: [borrachariaId], references: [id])
-  company     Company?         @relation(fields: [companyId], references: [id])
+  borracharia Borracharia       @relation(fields: [borrachariaId], references: [id])
+  company     Company?          @relation(fields: [companyId], references: [id])
   services    Service[]
   payments    ConvenioPayment[]
 
@@ -253,7 +269,7 @@ model Convenio {
 model ConvenioPayment {
   id         String   @id @default(cuid())
   convenioId String   @map("convenio_id")
-  amountPaid Decimal  @db.Decimal(10, 2) @map("amount_paid")
+  amountPaid Decimal  @map("amount_paid") @db.Decimal(10, 2)
   paidAt     DateTime @map("paid_at")
   notes      String?
   createdAt  DateTime @default(now()) @map("created_at")
