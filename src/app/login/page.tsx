@@ -330,6 +330,54 @@ export default function LoginPage() {
               </button>
             </p>
           )}
+
+          {/* Acesso rápido demo — visível quando a borracharia demo está selecionada */}
+          {step === "login" && selected?.name === DEMO_BORRACHARIA.name && (
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
+              <p className="text-xs font-semibold text-blue-800">Ambiente de demonstração — acesso rápido</p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={demoLoading}
+                  onClick={handleDemoLogin}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white active:bg-blue-700 disabled:opacity-60"
+                >
+                  {demoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+                  Admin demo
+                </button>
+                <button
+                  type="button"
+                  disabled={demoLoading}
+                  onClick={async () => {
+                    setDemoLoading(true);
+                    setError("");
+                    try {
+                      const res = await fetch(`/api/borracharias?q=${encodeURIComponent(DEMO_BORRACHARIA.name)}`);
+                      const data = (await res.json()) as Borracharia[];
+                      const demo = data.find((b) => b.name === DEMO_BORRACHARIA.name);
+                      if (!demo) { setError("Demo não encontrado."); setDemoLoading(false); return; }
+                      const result = await signIn("credentials", {
+                        email: DEMO_CREDENTIALS.operator.email,
+                        password: DEMO_CREDENTIALS.operator.password,
+                        borrachariaId: demo.id,
+                        redirect: false,
+                      });
+                      if (result?.error) { setError("Não foi possível entrar como operador demo."); setDemoLoading(false); return; }
+                      router.push("/"); router.refresh();
+                    } catch { setError("Erro inesperado."); setDemoLoading(false); }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-gray-700 px-3 py-2.5 text-sm font-semibold text-white active:bg-gray-800 disabled:opacity-60"
+                >
+                  {demoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
+                  Operador demo
+                </button>
+              </div>
+              {error && (
+                <p className="text-xs text-red-700">{error}</p>
+              )}
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="label">Email</label>
@@ -356,7 +404,7 @@ export default function LoginPage() {
               />
             </div>
 
-            {error && (
+            {error && !(step === "login" && selected?.name === DEMO_BORRACHARIA.name) && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
