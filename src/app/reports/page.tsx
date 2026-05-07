@@ -14,17 +14,21 @@ async function getReportData(borrachariaId: string) {
     month: { gte: startOfMonth(now), lte: endOfMonth(now) },
   };
 
-  const svc = (range: { gte: Date; lte: Date }) =>
-    prisma.service.findMany({
+  const svc = async (range: { gte: Date; lte: Date }) => {
+    const rows = await prisma.service.findMany({
       where: { borrachariaId, deletedAt: null, occurredAt: range },
       include: { serviceType: true },
     });
+    return rows.map((s) => ({ ...s, amount: Number(s.amount) }));
+  };
 
-  const exp = (range: { gte: Date; lte: Date }) =>
-    prisma.expense.findMany({
+  const exp = async (range: { gte: Date; lte: Date }) => {
+    const rows = await prisma.expense.findMany({
       where: { borrachariaId, deletedAt: null, occurredAt: range },
       include: { category: true },
     });
+    return rows.map((e) => ({ ...e, amount: Number(e.amount) }));
+  };
 
   const [ds, ws, ms, de, we, me] = await Promise.all([
     svc(ranges.day), svc(ranges.week), svc(ranges.month),

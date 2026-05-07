@@ -5,7 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 
 type ServiceWithType = {
   id: string;
-  amount: unknown;
+  amount: number;
   paymentMethod: string;
   paymentStatus: string;
   serviceType: { name: string };
@@ -13,7 +13,7 @@ type ServiceWithType = {
 
 type ExpenseWithCategory = {
   id: string;
-  amount: unknown;
+  amount: number;
   paymentMethod: string;
   hasReceipt: boolean;
   category: { name: string };
@@ -32,20 +32,20 @@ function computeReport(services: ServiceWithType[], expenses: ExpenseWithCategor
   const paidServices = services.filter((s) => s.paymentStatus !== "COURTESY");
   const pendingServices = services.filter((s) => s.paymentStatus === "PENDING");
 
-  const totalIncome = paidServices.reduce((acc, s) => acc + Number(s.amount), 0);
-  const pendingAmount = pendingServices.reduce((acc, s) => acc + Number(s.amount), 0);
-  const totalExpenses = expenses.reduce((acc, e) => acc + Number(e.amount), 0);
+  const totalIncome = paidServices.reduce((acc, s) => acc + s.amount, 0);
+  const pendingAmount = pendingServices.reduce((acc, s) => acc + s.amount, 0);
+  const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
 
   // Por forma de pagamento (entradas)
   const byPayment: Record<string, number> = {};
   for (const s of paidServices) {
-    byPayment[s.paymentMethod] = (byPayment[s.paymentMethod] ?? 0) + Number(s.amount);
+    byPayment[s.paymentMethod] = (byPayment[s.paymentMethod] ?? 0) + s.amount;
   }
 
   // Por categoria (despesas)
   const byCategory: Record<string, number> = {};
   for (const e of expenses) {
-    byCategory[e.category.name] = (byCategory[e.category.name] ?? 0) + Number(e.amount);
+    byCategory[e.category.name] = (byCategory[e.category.name] ?? 0) + e.amount;
   }
 
   // Serviços mais executados
@@ -55,8 +55,8 @@ function computeReport(services: ServiceWithType[], expenses: ExpenseWithCategor
   }
 
   // NF
-  const withReceipt = expenses.filter((e) => e.hasReceipt).reduce((acc, e) => acc + Number(e.amount), 0);
-  const withoutReceipt = expenses.filter((e) => !e.hasReceipt).reduce((acc, e) => acc + Number(e.amount), 0);
+  const withReceipt = expenses.filter((e) => e.hasReceipt).reduce((acc, e) => acc + e.amount, 0);
+  const withoutReceipt = expenses.filter((e) => !e.hasReceipt).reduce((acc, e) => acc + e.amount, 0);
 
   return {
     totalIncome,
