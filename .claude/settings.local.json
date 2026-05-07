@@ -26,7 +26,13 @@
       "Bash(curl -s http://localhost:3000/api/borracharias)",
       "Bash(curl -s http://localhost:3000/dashboard)",
       "Bash(pkill -f \"next dev\")",
-      "Bash(npx next *)"
+      "Bash(npx next *)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(mkdir -p \"/c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/services/[id]/edit\")",
+      "Bash(mkdir -p \"/c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/expenses/[id]/edit\")",
+      "Bash(mkdir -p \"/c/Users/gustavo.carvalho/source/repos/BorrachariaFacil/src/app/companies/[id]/edit\")",
+      "Bash(npx tsc *)",
+      "Bash(npx ts-node *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\gustavo.carvalho\\source\\repos\\BorrachariaFacil\\src\\app\\admin\\borracharias",
