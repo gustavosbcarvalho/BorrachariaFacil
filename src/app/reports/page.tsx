@@ -17,7 +17,13 @@ async function getReportData(borrachariaId: string) {
   const svc = async (range: { gte: Date; lte: Date }) => {
     const rows = await prisma.service.findMany({
       where: { borrachariaId, deletedAt: null, occurredAt: range },
-      include: { serviceType: true },
+      select: {
+        id: true,
+        amount: true,
+        paymentMethod: true,
+        paymentStatus: true,
+        serviceType: { select: { name: true } },
+      },
     });
     return rows.map((s) => ({ ...s, amount: Number(s.amount) }));
   };
@@ -25,7 +31,13 @@ async function getReportData(borrachariaId: string) {
   const exp = async (range: { gte: Date; lte: Date }) => {
     const rows = await prisma.expense.findMany({
       where: { borrachariaId, deletedAt: null, occurredAt: range },
-      include: { category: true },
+      select: {
+        id: true,
+        amount: true,
+        paymentMethod: true,
+        hasReceipt: true,
+        category: { select: { name: true } },
+      },
     });
     return rows.map((e) => ({ ...e, amount: Number(e.amount) }));
   };

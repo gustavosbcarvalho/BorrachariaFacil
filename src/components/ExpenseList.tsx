@@ -9,11 +9,10 @@ import { useTransition } from "react";
 type ExpenseWithRelations = {
   id: string;
   description: string;
-  amount: unknown;
+  amount: number;
   paymentMethod: string;
   hasReceipt: boolean;
-  notes: string | null;
-  occurredAt: Date;
+  occurredAt: string;
   category: { name: string };
   user: { name: string };
 };

@@ -4,7 +4,6 @@ import { useFormStatus } from "react-dom";
 import { createExpense, updateExpense } from "@/app/actions/expenses";
 import { todayISO } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { ExpenseCategory } from "@prisma/client";
 import { useState } from "react";
 
 function SubmitButton({ label }: { label: string }) {
@@ -16,19 +15,24 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
+type ExpenseCategoryOption = {
+  id: string;
+  name: string;
+};
+
 interface EditingExpense {
   id: string;
   categoryId: string;
   description: string;
-  amount: unknown;
+  amount: number;
   paymentMethod: string;
   hasReceipt: boolean;
   notes: string | null;
-  occurredAt: Date;
+  occurredAt: string;
 }
 
 interface Props {
-  categories: ExpenseCategory[];
+  categories: ExpenseCategoryOption[];
   editingExpense?: EditingExpense;
 }
 

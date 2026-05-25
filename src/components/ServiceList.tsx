@@ -5,7 +5,6 @@ import {
   PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS, PAYMENT_STATUS_COLORS,
 } from "@/lib/utils";
 import { updateServiceStatus, deleteService } from "@/app/actions/services";
-import { PaymentStatus } from "@prisma/client";
 import Link from "next/link";
 import { Plus, Pencil } from "lucide-react";
 import { useTransition } from "react";
@@ -14,12 +13,11 @@ type ServiceWithRelations = {
   id: string;
   description: string | null;
   vehiclePlate: string | null;
-  amount: unknown;
-  amountDue: unknown;
+  amount: number;
+  amountDue: number;
   paymentMethod: string;
-  paymentStatus: PaymentStatus;
-  notes: string | null;
-  occurredAt: Date;
+  paymentStatus: string;
+  occurredAt: string;
   serviceType: { name: string };
   user: { name: string };
 };

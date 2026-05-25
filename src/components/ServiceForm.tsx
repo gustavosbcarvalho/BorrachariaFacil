@@ -5,7 +5,6 @@ import { useFormStatus } from "react-dom";
 import { createService, updateService } from "@/app/actions/services";
 import { todayISO } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { ServiceType, Convenio } from "@prisma/client";
 
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
@@ -16,22 +15,32 @@ function SubmitButton({ label }: { label: string }) {
   );
 }
 
+type ServiceTypeOption = {
+  id: string;
+  name: string;
+};
+
+type ConvenioOption = {
+  id: string;
+  companyName: string;
+};
+
 interface EditingService {
   id: string;
   serviceTypeId: string;
   description: string | null;
   vehiclePlate: string | null;
-  amount: unknown;
+  amount: number;
   paymentMethod: string;
   paymentStatus: string;
   convenioId: string | null;
   notes: string | null;
-  occurredAt: Date;
+  occurredAt: string;
 }
 
 interface Props {
-  serviceTypes: ServiceType[];
-  convenios: Convenio[];
+  serviceTypes: ServiceTypeOption[];
+  convenios: ConvenioOption[];
   editingService?: EditingService;
 }
 

@@ -19,7 +19,7 @@ export default async function ExpensesPage({
   const sp = await searchParams;
   const dateRange = parseDateFilter(sp);
 
-  const expenses = await prisma.expense.findMany({
+  const expenseRows = await prisma.expense.findMany({
     where: {
       borrachariaId: session.user.borrachariaId!,
       deletedAt: null,
@@ -27,8 +27,23 @@ export default async function ExpensesPage({
     },
     orderBy: { occurredAt: "desc" },
     take: 200,
-    include: { category: true, user: { select: { name: true } } },
+    select: {
+      id: true,
+      description: true,
+      amount: true,
+      paymentMethod: true,
+      hasReceipt: true,
+      occurredAt: true,
+      category: { select: { name: true } },
+      user: { select: { name: true } },
+    },
   });
+
+  const expenses = expenseRows.map((expense) => ({
+    ...expense,
+    amount: Number(expense.amount),
+    occurredAt: expense.occurredAt.toISOString(),
+  }));
 
   return (
     <AppShell>

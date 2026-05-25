@@ -14,10 +14,12 @@ export default async function SettingsPage() {
   const [serviceTypes, categories] = await Promise.all([
     prisma.serviceType.findMany({
       where: { borrachariaId },
+      select: { id: true, name: true, active: true },
       orderBy: { name: "asc" },
     }),
     prisma.expenseCategory.findMany({
       where: { borrachariaId },
+      select: { id: true, name: true, active: true },
       orderBy: { name: "asc" },
     }),
   ]);

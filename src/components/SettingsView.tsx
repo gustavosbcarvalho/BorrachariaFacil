@@ -7,7 +7,6 @@ import {
   createCategory,
   toggleCategory,
 } from "@/app/actions/settings";
-import { ServiceType, ExpenseCategory } from "@prisma/client";
 import { Plus, Loader2, CreditCard, Building2 } from "lucide-react";
 import Link from "next/link";
 
@@ -84,12 +83,18 @@ function ToggleItem({
   );
 }
 
+type SettingsItem = {
+  id: string;
+  name: string;
+  active: boolean;
+};
+
 export function SettingsView({
   serviceTypes,
   categories,
 }: {
-  serviceTypes: ServiceType[];
-  categories: ExpenseCategory[];
+  serviceTypes: SettingsItem[];
+  categories: SettingsItem[];
 }) {
   return (
     <div className="space-y-6">

@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/AppShell";
 import { Header } from "@/components/Header";
@@ -11,10 +10,12 @@ export default async function NewServicePage() {
   const [serviceTypes, convenios] = await Promise.all([
     prisma.serviceType.findMany({
       where: { active: true, borrachariaId: session.user.borrachariaId! },
+      select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     prisma.convenio.findMany({
       where: { active: true, borrachariaId: session.user.borrachariaId! },
+      select: { id: true, companyName: true },
       orderBy: { companyName: "asc" },
     }),
   ]);

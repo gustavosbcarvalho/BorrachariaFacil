@@ -19,7 +19,7 @@ export default async function ServicesPage({
   const sp = await searchParams;
   const dateRange = parseDateFilter(sp);
 
-  const services = await prisma.service.findMany({
+  const serviceRows = await prisma.service.findMany({
     where: {
       borrachariaId: session.user.borrachariaId!,
       deletedAt: null,
@@ -27,8 +27,26 @@ export default async function ServicesPage({
     },
     orderBy: { occurredAt: "desc" },
     take: 200,
-    include: { serviceType: true, user: { select: { name: true } } },
+    select: {
+      id: true,
+      description: true,
+      vehiclePlate: true,
+      amount: true,
+      amountDue: true,
+      paymentMethod: true,
+      paymentStatus: true,
+      occurredAt: true,
+      serviceType: { select: { name: true } },
+      user: { select: { name: true } },
+    },
   });
+
+  const services = serviceRows.map((service) => ({
+    ...service,
+    amount: Number(service.amount),
+    amountDue: Number(service.amountDue),
+    occurredAt: service.occurredAt.toISOString(),
+  }));
 
   return (
     <AppShell>

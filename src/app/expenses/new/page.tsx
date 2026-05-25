@@ -9,6 +9,7 @@ export default async function NewExpensePage() {
 
   const categories = await prisma.expenseCategory.findMany({
     where: { active: true, borrachariaId: session.user.borrachariaId! },
+    select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
 
