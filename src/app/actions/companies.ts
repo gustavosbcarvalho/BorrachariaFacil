@@ -37,14 +37,15 @@ export async function createCompany(formData: FormData) {
 
 export async function updateCompany(id: string, formData: FormData) {
   const session = await requireAdmin();
+  const borrachariaId = session.user.borrachariaId!;
 
   const company = await prisma.company.findFirst({
-    where: { id, borrachariaId: session.user.borrachariaId! },
+    where: { id, borrachariaId },
   });
   if (!company) redirect("/companies");
 
-  await prisma.company.update({
-    where: { id },
+  await prisma.company.updateMany({
+    where: { id, borrachariaId },
     data: {
       name:        (formData.get("name") as string).trim(),
       cnpj:        (formData.get("cnpj") as string).trim() || null,

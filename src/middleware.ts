@@ -10,9 +10,10 @@ export default withAuth(
 
     const isSystemAdmin = token.role === "SYSTEM_ADMIN";
     const isAdminRoute = pathname.startsWith("/admin");
+    const isProfileRoute = pathname.startsWith("/profile");
 
-    // SYSTEM_ADMIN só acessa /admin
-    if (isSystemAdmin && !isAdminRoute) {
+    // SYSTEM_ADMIN só acessa administração e próprio perfil
+    if (isSystemAdmin && !isAdminRoute && !isProfileRoute) {
       return NextResponse.redirect(new URL("/admin", req.url));
     }
 

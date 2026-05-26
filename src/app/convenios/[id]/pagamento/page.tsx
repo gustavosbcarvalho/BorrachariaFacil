@@ -1,4 +1,4 @@
-import { redirect, notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/AppShell";
 import { Header } from "@/components/Header";
@@ -14,6 +14,7 @@ export default async function ConvenioPagamentoPage({
   params: Promise<{ id: string }>;
 }) {
   const session = await getTenantSession();
+  if (session.user.role !== "ADMIN") redirect("/dashboard");
   const { id } = await params;
 
   const convenio = await prisma.convenio.findFirst({
@@ -23,6 +24,7 @@ export default async function ConvenioPagamentoPage({
 
   const pendingServices = await prisma.service.findMany({
     where: {
+      borrachariaId: session.user.borrachariaId!,
       convenioId: id,
       paymentStatus: { in: ["PENDING", "PARTIAL"] },
       deletedAt: null,

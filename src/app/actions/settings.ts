@@ -27,8 +27,11 @@ export async function createServiceType(formData: FormData) {
 }
 
 export async function toggleServiceType(id: string, active: boolean) {
-  await requireAdmin();
-  await prisma.serviceType.update({ where: { id }, data: { active } });
+  const session = await requireAdmin();
+  await prisma.serviceType.updateMany({
+    where: { id, borrachariaId: session.user.borrachariaId! },
+    data: { active },
+  });
   revalidatePath("/settings");
 }
 
@@ -47,7 +50,10 @@ export async function createCategory(formData: FormData) {
 }
 
 export async function toggleCategory(id: string, active: boolean) {
-  await requireAdmin();
-  await prisma.expenseCategory.update({ where: { id }, data: { active } });
+  const session = await requireAdmin();
+  await prisma.expenseCategory.updateMany({
+    where: { id, borrachariaId: session.user.borrachariaId! },
+    data: { active },
+  });
   revalidatePath("/settings");
 }

@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/AppShell";
 import { Header } from "@/components/Header";
@@ -7,6 +7,7 @@ import { getTenantSession } from "@/lib/tenant";
 
 export default async function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getTenantSession();
+  if (session.user.role !== "ADMIN") redirect("/dashboard");
   const { id } = await params;
 
   const [service, serviceTypes, convenios] = await Promise.all([

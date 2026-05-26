@@ -7,8 +7,14 @@ import { requireSystemAdmin } from "@/lib/auth";
 import { Role, PlanStatus, PlanName } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
+async function requireSystemAdminAction() {
+  const session = await requireSystemAdmin();
+  if (!session) redirect("/login");
+  return session;
+}
+
 export async function createBorracharia(formData: FormData) {
-  await requireSystemAdmin();
+  await requireSystemAdminAction();
 
   const name = (formData.get("name") as string).trim();
   const cnpj = (formData.get("cnpj") as string).trim() || null;
@@ -74,13 +80,13 @@ export async function createBorracharia(formData: FormData) {
 }
 
 export async function toggleBorracharia(id: string, active: boolean) {
-  await requireSystemAdmin();
+  await requireSystemAdminAction();
   await prisma.borracharia.update({ where: { id }, data: { active } });
   revalidatePath("/admin");
 }
 
 export async function updateBorracharia(id: string, formData: FormData) {
-  await requireSystemAdmin();
+  await requireSystemAdminAction();
 
   await prisma.borracharia.update({
     where: { id },
@@ -100,13 +106,20 @@ export async function updateBorracharia(id: string, formData: FormData) {
 }
 
 export async function createUserForBorracharia(formData: FormData) {
-  await requireSystemAdmin();
+  await requireSystemAdminAction();
 
   const borrachariaId = formData.get("borrachariaId") as string;
   const name = (formData.get("name") as string).trim();
   const email = (formData.get("email") as string).trim();
   const password = formData.get("password") as string;
   const role = formData.get("role") as Role;
+  if (role !== Role.ADMIN && role !== Role.OPERATOR) redirect("/admin");
+
+  const borracharia = await prisma.borracharia.findUnique({
+    where: { id: borrachariaId },
+    select: { id: true },
+  });
+  if (!borracharia) redirect("/admin");
 
   const hash = await bcrypt.hash(password, 10);
   await prisma.user.create({
@@ -118,7 +131,10 @@ export async function createUserForBorracharia(formData: FormData) {
 }
 
 export async function toggleUser(id: string, active: boolean) {
-  await requireSystemAdmin();
-  await prisma.user.update({ where: { id }, data: { active } });
+  await requireSystemAdminAction();
+  await prisma.user.updateMany({
+    where: { id, borrachariaId: { not: null } },
+    data: { active },
+  });
   revalidatePath("/admin");
 }

@@ -4,7 +4,8 @@ import { AppShell } from "@/components/AppShell";
 import { Header } from "@/components/Header";
 import { AdminHeader } from "@/components/AdminHeader";
 import { changePassword } from "@/app/actions/profile";
-import { Providers } from "@/components/Providers";
+import { FlashMessage } from "@/components/FlashMessage";
+import { getFlash } from "@/lib/flash";
 
 export default async function ProfilePage() {
   const session = await getSession();
@@ -33,16 +34,17 @@ export default async function ProfilePage() {
   );
 
   if (isSystemAdmin) {
+    const flash = await getFlash();
+
     return (
-      <Providers>
-        <div className="min-h-screen bg-gray-50">
-          <AdminHeader name={session.user.name} />
-          <main className="max-w-sm mx-auto px-4 py-6">
-            <h1 className="text-lg font-bold text-gray-900 mb-4">Alterar Senha</h1>
-            {form}
-          </main>
-        </div>
-      </Providers>
+      <div className="min-h-screen bg-gray-50">
+        {flash && <FlashMessage message={flash.message} type={flash.type} />}
+        <AdminHeader name={session.user.name} />
+        <main className="max-w-sm mx-auto px-4 py-6">
+          <h1 className="text-lg font-bold text-gray-900 mb-4">Alterar Senha</h1>
+          {form}
+        </main>
+      </div>
     );
   }
 

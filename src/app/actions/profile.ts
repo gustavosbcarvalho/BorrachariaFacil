@@ -2,8 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getTenantSession } from "@/lib/tenant";
-import { requireSystemAdmin } from "@/lib/auth";
 import { getSession } from "@/lib/auth";
 import { setFlash } from "@/lib/flash";
 import bcrypt from "bcryptjs";
@@ -27,7 +25,19 @@ export async function changePassword(formData: FormData) {
     redirect("/profile");
   }
 
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (session.user.role !== "SYSTEM_ADMIN" && !session.user.borrachariaId) {
+    redirect("/login");
+  }
+
+  const user = await prisma.user.findFirst({
+    where: {
+      id: session.user.id,
+      ...(session.user.role === "SYSTEM_ADMIN"
+        ? { role: "SYSTEM_ADMIN" as const }
+        : { borrachariaId: session.user.borrachariaId! }),
+    },
+    select: { id: true, passwordHash: true },
+  });
   if (!user) redirect("/login");
 
   const currentOk = await bcrypt.compare(currentPassword, user.passwordHash);
@@ -37,10 +47,18 @@ export async function changePassword(formData: FormData) {
   }
 
   const hash = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash: hash, mustChangePassword: false },
-  });
+  if (session.user.role === "SYSTEM_ADMIN") {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: hash, mustChangePassword: false },
+    });
+  } else {
+    const result = await prisma.user.updateMany({
+      where: { id: user.id, borrachariaId: session.user.borrachariaId! },
+      data: { passwordHash: hash, mustChangePassword: false },
+    });
+    if (result.count === 0) redirect("/login");
+  }
 
   await setFlash("Senha alterada com sucesso!");
 

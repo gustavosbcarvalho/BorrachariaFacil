@@ -56,7 +56,8 @@ export async function toggleConvenio(id: string, active: boolean) {
  * - Atualiza nextPaymentDate do convênio conforme frequência
  */
 export async function settleConvenio(formData: FormData) {
-  const session = await getTenantSession();
+  const session = await requireAdminTenant();
+  const borrachariaId = session.user.borrachariaId!;
   const convenioId = formData.get("convenioId") as string;
   const amountPaidStr = formData.get("amountPaid") as string;
   const notes = (formData.get("notes") as string).trim() || null;
@@ -67,13 +68,14 @@ export async function settleConvenio(formData: FormData) {
 
   // Valida que o convênio pertence à borracharia do usuário
   const convenio = await prisma.convenio.findFirst({
-    where: { id: convenioId, borrachariaId: session.user.borrachariaId! },
+    where: { id: convenioId, borrachariaId },
   });
   if (!convenio) throw new Error("Convênio não encontrado.");
 
   // Busca serviços pendentes FIFO
   const pendingServices = await prisma.service.findMany({
     where: {
+      borrachariaId,
       convenioId,
       paymentStatus: { in: ["PENDING", "PARTIAL"] },
       deletedAt: null,
@@ -103,8 +105,8 @@ export async function settleConvenio(formData: FormData) {
 
     if (remaining >= outstanding) {
       // Pagamento total deste serviço
-      await prisma.service.update({
-        where: { id: service.id },
+      await prisma.service.updateMany({
+        where: { id: service.id, borrachariaId, convenioId },
         data: {
           paymentStatus: "PAID",
           amountPaid: new Decimal(total),
@@ -115,8 +117,8 @@ export async function settleConvenio(formData: FormData) {
       remaining -= outstanding;
     } else {
       // Pagamento parcial deste serviço
-      await prisma.service.update({
-        where: { id: service.id },
+      await prisma.service.updateMany({
+        where: { id: service.id, borrachariaId, convenioId },
         data: {
           paymentStatus: "PARTIAL",
           amountPaid: new Decimal(alreadyPaid + remaining),
@@ -138,8 +140,8 @@ export async function settleConvenio(formData: FormData) {
     next.setDate(next.getDate() + 7);
   }
 
-  await prisma.convenio.update({
-    where: { id: convenioId },
+  await prisma.convenio.updateMany({
+    where: { id: convenioId, borrachariaId },
     data: { nextPaymentDate: next },
   });
 

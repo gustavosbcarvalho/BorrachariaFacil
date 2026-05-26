@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback } from "react";
+import { Search, X } from "lucide-react";
+import { useCallback, type FormEvent } from "react";
 
 const PRESETS = [
   { label: "Hoje", value: "today" },
@@ -12,7 +13,16 @@ const PRESETS = [
 
 type Preset = (typeof PRESETS)[number]["value"];
 
-export function DateFilter() {
+function pathWithParams(pathname: string, params: URLSearchParams) {
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+export function DateFilter({
+  searchPlaceholder = "Buscar...",
+}: {
+  searchPlaceholder?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -30,7 +40,7 @@ export function DateFilter() {
         next.delete("from");
         next.delete("to");
       }
-      router.push(`${pathname}?${next.toString()}`);
+      router.push(pathWithParams(pathname, next));
     },
     [params, pathname, router]
   );
@@ -41,17 +51,65 @@ export function DateFilter() {
       next.delete("period");
       if (from) next.set("from", from); else next.delete("from");
       if (to) next.set("to", to); else next.delete("to");
-      router.push(`${pathname}?${next.toString()}`);
+      router.push(pathWithParams(pathname, next));
     },
     [params, pathname, router]
   );
 
+  const setSearch = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const q = String(formData.get("q") ?? "").trim();
+      const next = new URLSearchParams(params.toString());
+      if (q) next.set("q", q); else next.delete("q");
+      router.push(pathWithParams(pathname, next));
+    },
+    [params, pathname, router]
+  );
+
+  const clearSearch = useCallback(() => {
+    const next = new URLSearchParams(params.toString());
+    next.delete("q");
+    router.push(pathWithParams(pathname, next));
+  }, [params, pathname, router]);
+
   const fromVal = params.get("from") ?? "";
   const toVal = params.get("to") ?? "";
+  const qVal = params.get("q") ?? "";
   const isCustom = !params.get("period") && (fromVal || toVal);
 
   return (
     <div className="space-y-2">
+      <form onSubmit={setSearch} className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <input
+            type="search"
+            name="q"
+            defaultValue={qVal}
+            placeholder={searchPlaceholder}
+            className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm"
+          />
+        </div>
+        {qVal && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="rounded-lg border border-gray-300 px-3 text-gray-500 active:bg-gray-100"
+            aria-label="Limpar busca"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+        <button
+          type="submit"
+          className="rounded-lg bg-blue-600 px-3 text-sm font-medium text-white active:bg-blue-700"
+        >
+          Buscar
+        </button>
+      </form>
+
       <div className="flex gap-1.5 flex-wrap">
         {PRESETS.map((p) => (
           <button
